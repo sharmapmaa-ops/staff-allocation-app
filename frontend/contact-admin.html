@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Your Administrator · Staff Allocation Management System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-body" style="background:#f4f7fd;">
+    <div style="width:100%; max-width:720px; z-index:1;">
+      <div class="brand" style="justify-content:center; margin-bottom:26px;" id="brand-sm"></div>
+      <div class="card-panel" style="width:100%; padding:44px 56px;">
+        <div class="contact-icon-wrap" id="env-icon"></div>
+        <h2>Contact Your Administrator</h2>
+        <p class="sub">You don't have an account or don't have access<br>to this system.</p>
+        <hr class="hr-line" style="margin-top:0;">
+        <div id="error-slot"></div>
+        <div class="assist-box">
+          <div class="ic" id="assist-ic"></div>
+          <p>Please provide the details below so we can notify your administrator and request access for you.</p>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <div class="input-wrap" id="ic-mail-wrap"><input id="ca-email" type="text" placeholder="you@company.com"></div>
+        </div>
+        <div class="field">
+          <label>Company Name</label>
+          <div class="input-wrap" id="ic-building-wrap"><input id="ca-company" type="text" placeholder="Your company name"></div>
+        </div>
+        <div class="field">
+          <label>Message to Administrator</label>
+          <div class="input-wrap" style="padding-top:0;">
+            <textarea id="ca-message" rows="3" placeholder="Tell us what access you need"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="location.href='login.html'"><span id="back-ic"></span> Back to Sign In</button>
+          <button class="btn btn-primary" id="send-btn"><span id="send-label"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-footer">© 2025 Staff Allocation Management System. All rights reserved.</div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/contact-admin.js"></script>
+</body>
+</html>

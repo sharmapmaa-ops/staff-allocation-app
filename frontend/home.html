@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home · Staff Allocation Management System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar-container"></div>
+  <div class="main-area">
+    <div id="topbar-container"></div>
+    <div class="content" id="content">
+      <div class="home-filters">
+        <select id="home-emp-select"></select>
+        <select id="home-month-select"></select>
+      </div>
+      <div class="stat-cards" id="stat-cards"></div>
+      <div class="dash-grid-2">
+        <div class="dash-card">
+          <h3>Hours Distribution</h3>
+          <div id="donut-slot"></div>
+        </div>
+        <div class="dash-card">
+          <h3>Hours Trend (Daily)</h3>
+          <div id="trend-slot"></div>
+        </div>
+      </div>
+      <div class="dash-grid-3" id="bottom-grid"></div>
+    </div>
+  </div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

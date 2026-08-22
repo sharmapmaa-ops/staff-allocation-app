@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Entry · Staff Allocation Management System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <div id="sidebar-container"></div>
+  <div class="main-area">
+    <div id="topbar-container"></div>
+    <div class="content" id="content">
+      <div class="te-nav">
+        <button class="btn btn-outline" id="prev-week-btn"></button>
+        <div class="range" id="week-range">-</div>
+        <button class="btn btn-outline" id="next-week-btn"></button>
+      </div>
+      <div class="te-table-wrap">
+        <table class="te-table" id="te-table">
+          <thead><tr id="te-head-row"></tr></thead>
+          <tbody id="te-tbody"></tbody>
+          <tfoot><tr id="te-foot-row"></tr></tfoot>
+        </table>
+      </div>
+      <div class="te-actions">
+        <div style="display:flex; gap:14px;">
+          <button class="btn btn-outline" id="add-row-btn"></button>
+          <button class="btn btn-danger-outline" id="delete-rows-btn"></button>
+          <button class="btn btn-primary" id="save-btn"></button>
+        </div>
+        <div class="te-note" id="te-note"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/time-entry.js"></script>
+</body>
+</html>

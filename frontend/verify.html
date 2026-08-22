@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Your Identity · Staff Allocation Management System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-body">
+    <div class="auth-wave"></div>
+    <div style="width:100%; max-width:460px; z-index:1;">
+      <div class="brand" style="justify-content:center; margin-bottom:22px;" id="brand-sm"></div>
+      <div class="card-panel" style="width:100%;">
+        <div class="contact-icon-wrap" id="shield-icon"></div>
+        <h2>Verify Your Identity</h2>
+        <p class="sub" id="verify-sub">Enter the 6-digit code to continue.</p>
+        <div id="notice-slot"></div>
+        <div id="error-slot"></div>
+
+        <div class="otp-row">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-idx="0">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-idx="1">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-idx="2">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-idx="3">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-idx="4">
+          <input class="otp-box" maxlength="1" inputmode="numeric" data-idx="5">
+        </div>
+
+        <button class="btn btn-primary btn-block" id="verify-btn" style="margin-top:10px;"><span id="verify-label">Verify &amp; Continue</span></button>
+
+        <div class="resend-row">
+          Didn't get a code? <a id="resend-link">Resend code</a>
+        </div>
+        <hr class="hr-line">
+        <p class="center-text small" style="text-align:center;"><a onclick="location.href='login.html'">Cancel and go back to sign in</a></p>
+      </div>
+    </div>
+  </div>
+  <div class="auth-footer">© 2025 Staff Allocation Management System. All rights reserved.</div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/verify.js"></script>
+</body>
+</html>

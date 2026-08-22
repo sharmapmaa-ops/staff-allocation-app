@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In · Staff Allocation Management System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-body">
+    <div class="auth-wave"></div>
+    <div class="login-grid">
+      <div class="login-left">
+        <div class="brand" id="brand-logo"></div>
+        <hr class="rule">
+        <p class="desc">A complete solution to streamline resource allocation, track time entries, manage projects, and improve team productivity.</p>
+        <div class="feature-row"><div class="feature-icon" id="ic-users"></div><div><h4>Smart Allocation</h4><p>Allocate the right people to the right projects.</p></div></div>
+        <div class="feature-row"><div class="feature-icon" id="ic-clock"></div><div><h4>Track &amp; Monitor</h4><p>Track time, monitor progress, and stay on schedule.</p></div></div>
+        <div class="feature-row"><div class="feature-icon" id="ic-bar"></div><div><h4>Insights &amp; Reports</h4><p>Get real-time insights and make data-driven decisions.</p></div></div>
+      </div>
+      <div class="card-panel">
+        <h2>Welcome Back!</h2>
+        <p class="sub">Please sign in to your account</p>
+        <div id="error-slot"></div>
+        <div class="field">
+          <label>Email Address</label>
+          <div class="input-wrap" id="ic-mail-wrap"><input id="login-email" type="text" placeholder="Enter your email address"></div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap eye" id="ic-lock-wrap">
+            <input id="login-password" type="password" placeholder="Enter your password">
+            <button class="eye-btn" id="eye-btn"></button>
+          </div>
+        </div>
+        <div class="row-link"><a id="forgot-link">Forgot Password?</a></div>
+        <button class="btn btn-primary btn-block" id="signin-btn"><span id="signin-label">Sign In</span></button>
+        <div class="divider-or">OR</div>
+        <p class="center-text">Don't have workspace? <a href="create-workspace.html">Register your workspace</a></p>
+        <hr class="hr-line">
+        <div class="need-access" id="need-access-slot"></div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-footer">© 2025 Staff Allocation Management System. All rights reserved.</div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

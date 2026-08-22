@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Your Workspace · Staff Allocation Management System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-body">
+    <div class="login-grid" style="max-width:1000px;">
+      <div class="login-left" style="text-align:center; flex:0.9;">
+        <div style="display:flex;justify-content:center;" id="ws-icon"></div>
+        <div class="brand-text" style="text-align:center; margin-top:14px;">Staff Allocation<br><span>Management System</span></div>
+        <hr class="rule" style="margin:20px auto;">
+        <h3 style="font-size:22px; margin-bottom:6px;">Welcome!</h3>
+        <p style="color:var(--text-gray);">Create your workspace to get started.</p>
+        <div style="margin-top:30px; opacity:.85;" id="ws-illustration"></div>
+      </div>
+      <div class="card-panel" style="width:520px; box-shadow:0 20px 50px rgba(20,40,90,.12);">
+        <h2 style="text-align:left;">Create Your Workspace</h2>
+        <p class="sub" style="text-align:left;">Enter your details to create your workspace.</p>
+        <div id="error-slot"></div>
+        <div class="field">
+          <label>Workspace Name</label>
+          <div class="input-wrap" id="ic-building-wrap"><input id="ws-name" type="text" placeholder="e.g. Acme Workspace"></div>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <div class="input-wrap" id="ic-mail-wrap"><input id="ws-email" type="text" placeholder="admin@yourcompany.com"></div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap eye" id="ic-lock-wrap1">
+            <input id="ws-password" type="password" placeholder="Create a strong password">
+            <button class="eye-btn" id="eye-btn1"></button>
+          </div>
+          <div class="strength-bars"><span id="sb1"></span><span id="sb2"></span><span id="sb3"></span><span id="sb4"></span></div>
+          <div class="field-note" id="strength-label"></div>
+          <div class="field-note">Password must be at least 8 characters long and include a number, uppercase, lowercase letter, and special character.</div>
+        </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <div class="input-wrap eye" id="ic-lock-wrap2">
+            <input id="ws-password2" type="password" placeholder="Re-enter your password">
+            <button class="eye-btn" id="eye-btn2"></button>
+          </div>
+          <div class="field-note" id="match-note"></div>
+        </div>
+        <div class="btn-row" style="margin-top:22px;">
+          <button class="btn btn-outline" onclick="location.href='login.html'"><span id="back-ic"></span> Back to Login</button>
+          <button class="btn btn-primary" id="create-btn"><span id="create-label">Create Workspace</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="auth-footer">© 2025 Staff Allocation Management System. All rights reserved.</div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/common.js"></script>
+<script src="js/create-workspace.js"></script>
+</body>
+</html>

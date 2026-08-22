@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0; url=login.html">
+<title>Staff Allocation Management System</title>
+<script>
+  (function () {
+    var token = localStorage.getItem('sa_token');
+    location.replace(token ? 'home.html' : 'login.html');
+  })();
+</script>
+</head>
+<body></body>
+</html>

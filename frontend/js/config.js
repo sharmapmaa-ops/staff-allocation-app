@@ -7,5 +7,5 @@
  * default below (http://localhost:4000/api) works out of the box.
  */
 window.APP_CONFIG = {
-  API_BASE: (window.localStorage.getItem('sa_api_base_override')) || 'http://localhost:4000/api',
+  API_BASE: (window.localStorage.getItem('sa_api_base_override')) || 'https://staff-allocation-backend.onrender.com/api',
 };

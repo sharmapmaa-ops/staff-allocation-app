@@ -56,10 +56,13 @@ router.post('/register', async (req, res) => {
         ? 'A verification code has been emailed to you.'
         : 'SMTP is not configured yet - use verification code 123456 to continue.',
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not create workspace. Please try again.' });
-  }
+   } catch (err) {
+     console.error(err);
+     if (err.code === '23505') {
+       return res.status(409).json({ error: 'An account with this email already exists. Please sign in instead.' });
+     }
+     res.status(500).json({ error: 'Could not create workspace. Please try again.' });
+   }
 });
 
 // ---------------------------------------------------------------

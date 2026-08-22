@@ -139,6 +139,7 @@ router.post('/verify', async (req, res) => {
         email: user.email,
         role: user.role,
         employeeCode: user.employee_code,
+        employeeId: user.employee_row_id || null,
       },
     });
   } catch (err) {

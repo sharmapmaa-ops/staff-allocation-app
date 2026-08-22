@@ -51,7 +51,7 @@
           <button class="filters-btn" id="clear-filters">${I('filter')} Clear Filters</button>
           <button class="btn btn-primary" id="add-employee-btn">${I('addUser')} Add New Employee</button>
         </div>
-        <div class="table-scroll"><table class="data-table">
+        <div class="table-scroll h-md"><table class="data-table">
           <thead><tr>
             <th>Employee ID</th><th>Employee Full Name</th><th>Department</th><th>Designation</th><th>Country</th><th>Date of Birth</th>
             <th>Gender</th><th>Contact Number</th><th>Joining Date</th><th>Exit Date</th><th>Payroll Type</th><th>Location</th>

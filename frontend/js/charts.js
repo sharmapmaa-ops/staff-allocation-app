@@ -82,7 +82,7 @@ function trendChartSVG(daily, daysInMonth, monthLabel){
     ${gridlines}${bars}
     <path d="${linePts}" fill="none" stroke="#16a34a" stroke-width="2"/>
     ${xlabels}
-    <g transform="translate(${w - 260},-2)" font-size="12">
+    <g transform="translate(${w - 346},-2)" font-size="12">
       <rect x="0" y="6" width="12" height="12" fill="#2563eb"/><text x="16" y="16">Billable Hours</text>
       <rect x="115" y="6" width="12" height="12" fill="#f59e0b"/><text x="131" y="16">Non-Billable Hours</text>
       <circle cx="256" cy="12" r="4" fill="#16a34a"/><text x="266" y="16">Total Hours</text>

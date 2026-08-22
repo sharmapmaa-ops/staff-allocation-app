@@ -46,7 +46,7 @@
           <div class="search-box">${I('search')}<input id="project-search" placeholder="Search projects..."></div>
           <button class="btn btn-primary" id="add-project-btn">${I('plus')} Add Project</button>
         </div>
-        <div class="table-scroll"><table class="data-table">
+        <div class="table-scroll h-md"><table class="data-table">
           <thead><tr>
             <th>Project ID</th><th>Project Name</th><th>Client Name</th><th>Category</th><th>Status</th><th>Project Type</th>
             <th>Billing Frequency</th><th>SOW Available</th><th>Billable</th><th>Project Manager</th><th>Billing Basis</th><th>Hours Capping</th>

@@ -77,7 +77,7 @@
         <div class="summary-tile"><div class="label">Billable Share</div><div class="value">${totalHours ? Math.round(totalBillable / totalHours * 100) : 0}%</div></div>
       </div>
       <div class="panel no-tabs">
-        <div class="table-scroll"><table class="data-table">
+        <div class="table-scroll h-sm"><table class="data-table">
           <thead><tr><th>Month</th><th>Project Code</th><th>Project Name</th><th>Category</th><th>Client Name</th><th>Billable Hours</th><th>Non-Billable Hours</th><th>Total Hours</th></tr></thead>
           <tbody>${data.map(r => `<tr><td>${r.month}</td><td>${r.project_code}</td><td>${r.project_name}</td><td>${r.category || '—'}</td><td>${r.client_name || '—'}</td><td>${hrs(r.billable_hours)}</td><td>${hrs(r.non_billable_hours)}</td><td><b>${hrs(r.total_hours)}</b></td></tr>`).join('') || emptyRow(8)}</tbody>
         </table></div>
@@ -95,7 +95,7 @@
         <div class="summary-tile"><div class="label">Avg Hours / Employee</div><div class="value">${uniqEmp ? hrs(totalHours / uniqEmp) : '0.00'}</div></div>
       </div>
       <div class="panel no-tabs">
-        <div class="table-scroll"><table class="data-table">
+        <div class="table-scroll h-sm"><table class="data-table">
           <thead><tr><th>Employee Code</th><th>Employee Name</th><th>Project Code</th><th>Project Name</th><th>Category</th><th>Client Name</th><th>Billable Hours</th><th>Non-Billable Hours</th><th>Total Hours</th></tr></thead>
           <tbody>${data.map(r => `<tr><td>${r.employee_code}</td><td>${r.full_name}</td><td>${r.project_code}</td><td>${r.project_name}</td><td>${r.category || '—'}</td><td>${r.client_name || '—'}</td><td>${hrs(r.billable_hours)}</td><td>${hrs(r.non_billable_hours)}</td><td><b>${hrs(r.total_hours)}</b></td></tr>`).join('') || emptyRow(9)}</tbody>
         </table></div>
@@ -115,7 +115,7 @@
       </div>
       <div class="info-banner">${I('info')}<span>Profitability = billable hours × project rate (revenue) minus billable hours × employee cost per hour (gross salary ÷ 160). This is a simplified estimate — adjust the formula in <code>backend/routes/reports.js</code> to match your real costing model.</span></div>
       <div class="panel no-tabs">
-        <div class="table-scroll"><table class="data-table">
+        <div class="table-scroll h-sm"><table class="data-table">
           <thead><tr><th>Project Code</th><th>Project Name</th><th>Category</th><th>Client Name</th><th>Billable Hours</th><th>Rate</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin %</th></tr></thead>
           <tbody>${data.map(r => `<tr><td>${r.project_code}</td><td>${r.project_name}</td><td>${r.category || '—'}</td><td>${r.client_name || '—'}</td><td>${hrs(r.billable_hours)}</td><td>${money(r.rate)}</td><td>${money(r.revenue)}</td><td>${money(r.cost)}</td><td style="color:${r.profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:700;">${money(r.profit)}</td><td>${r.marginPct}%</td></tr>`).join('') || emptyRow(10)}</tbody>
         </table></div>
@@ -135,7 +135,7 @@
       </div>
       <div class="info-banner">${I('info')}<span>Cost per employee is estimated as gross salary ÷ 160 working hours/month. Adjust in <code>backend/routes/reports.js</code> for your real cost basis.</span></div>
       <div class="panel no-tabs">
-        <div class="table-scroll"><table class="data-table">
+        <div class="table-scroll h-sm"><table class="data-table">
           <thead><tr><th>Employee Code</th><th>Employee Name</th><th>Billable Hours</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin %</th></tr></thead>
           <tbody>${data.map(r => `<tr><td>${r.employee_code}</td><td>${r.full_name}</td><td>${hrs(r.billable_hours)}</td><td>${money(r.revenue)}</td><td>${money(r.cost)}</td><td style="color:${r.profit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:700;">${money(r.profit)}</td><td>${r.marginPct}%</td></tr>`).join('') || emptyRow(7)}</tbody>
         </table></div>

@@ -41,7 +41,7 @@ function trendChartSVG(daily, daysInMonth, monthLabel){
   daily.forEach(d => { byDate[d.d.slice(0, 10)] = d; });
   const days = daysInMonth || 30;
   const billable = [], nonBillable = [];
-  const monthPrefix = daily.length ? daily[0].d.slice(0, 7) : new Date().toISOString().slice(0, 7);
+  const monthPrefix = daily.length ? daily[0].d.slice(0, 7) : localMonthValue(new Date());
   for (let i = 1; i <= days; i++) {
     const key = `${monthPrefix}-${String(i).padStart(2, '0')}`;
     const rec = byDate[key];

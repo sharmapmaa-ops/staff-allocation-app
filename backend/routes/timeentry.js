@@ -5,11 +5,19 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 router.use(requireAuth);
 
+async function employeeInWorkspace(employeeId, workspaceId) {
+  const res = await query('SELECT 1 FROM employees WHERE id=$1 AND workspace_id=$2', [employeeId, workspaceId]);
+  return res.rows.length > 0;
+}
+
 // GET /api/time-entries?employeeId=&weekStart=YYYY-MM-DD&weekEnd=YYYY-MM-DD
 router.get('/', async (req, res) => {
   const { employeeId, weekStart, weekEnd } = req.query;
   if (!employeeId || !weekStart || !weekEnd) {
     return res.status(400).json({ error: 'employeeId, weekStart and weekEnd are required.' });
+  }
+  if (!(await employeeInWorkspace(employeeId, req.user.workspaceId))) {
+    return res.status(403).json({ error: 'That employee is not part of your workspace.' });
   }
   try {
     const result = await query(
@@ -31,6 +39,9 @@ router.post('/bulk', async (req, res) => {
   const { employeeId, weekStart, weekEnd, rows } = req.body;
   if (!employeeId || !weekStart || !weekEnd || !Array.isArray(rows)) {
     return res.status(400).json({ error: 'employeeId, weekStart, weekEnd and rows[] are required.' });
+  }
+  if (!(await employeeInWorkspace(employeeId, req.user.workspaceId))) {
+    return res.status(403).json({ error: 'That employee is not part of your workspace.' });
   }
   const client = await pool.connect();
   try {

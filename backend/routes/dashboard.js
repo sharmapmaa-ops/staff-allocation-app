@@ -8,18 +8,19 @@ router.use(requireAuth);
 
 // GET /api/dashboard/employee-options
 // Returns the employees a logged-in user is allowed to pick in dropdowns:
-// Admins get everyone; non-admins (managers) get themself + direct reports.
+// Admins get everyone in THIS workspace; non-admins (managers) get
+// themself + direct reports, also scoped to this workspace.
 router.get('/employee-options', async (req, res) => {
   try {
     const teamIds = await getTeamScope(query, req.user);
     let rows;
     if (teamIds === null) {
-      const r = await query('SELECT id, employee_code, full_name FROM employees ORDER BY full_name ASC');
+      const r = await query('SELECT id, employee_code, full_name FROM employees WHERE workspace_id=$1 ORDER BY full_name ASC', [req.user.workspaceId]);
       rows = r.rows;
     } else if (teamIds.length === 0) {
       rows = [];
     } else {
-      const r = await query('SELECT id, employee_code, full_name FROM employees WHERE id = ANY($1::int[]) ORDER BY full_name ASC', [teamIds]);
+      const r = await query('SELECT id, employee_code, full_name FROM employees WHERE workspace_id=$1 AND id = ANY($2::int[]) ORDER BY full_name ASC', [req.user.workspaceId, teamIds]);
       rows = r.rows;
     }
     res.json({ data: rows, scopeLabel: teamIds === null ? 'All' : 'My Team' });
@@ -30,17 +31,18 @@ router.get('/employee-options', async (req, res) => {
 });
 
 // GET /api/dashboard/summary?employeeId=all|<id>&month=YYYY-MM
+// Every query here joins employees on workspace_id so that, regardless of
+// role, data from other companies (workspaces) using this same system can
+// never appear - "all" always means "all within my own workspace".
 router.get('/summary', async (req, res) => {
   const { month } = req.query;
   let { employeeId = 'all' } = req.query;
   const monthStart = month ? `${month}-01` : new Date().toISOString().slice(0, 7) + '-01';
+  const workspaceId = req.user.workspaceId;
 
   try {
     const teamIds = await getTeamScope(query, req.user);
 
-    // Non-admins can only ever see their own team's data - "all" for them
-    // means "my whole team combined", and any specific id they ask for
-    // must be inside that team (otherwise they get an empty result).
     let restrictToIds = null;
     if (teamIds !== null) {
       if (employeeId === 'all') {
@@ -51,8 +53,8 @@ router.get('/summary', async (req, res) => {
     }
 
     let empFilter = '';
-    const params = [monthStart];
-    let paramIndex = 2;
+    const params = [monthStart, workspaceId];
+    let paramIndex = 3;
     if (employeeId !== 'all') {
       empFilter = `AND te.employee_id = $${paramIndex}`;
       params.push(employeeId);
@@ -68,6 +70,7 @@ router.get('/summary', async (req, res) => {
         COALESCE(SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END),0) AS billable,
         COALESCE(SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END),0) AS non_billable
       FROM time_entries te
+      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
       WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter}
     `, params);
     const billable = Number(totalsRes.rows[0].billable) || 0;
@@ -79,20 +82,25 @@ router.get('/summary', async (req, res) => {
              COALESCE(SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END),0) AS billable,
              COALESCE(SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END),0) AS non_billable
       FROM time_entries te
+      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
       WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter}
       GROUP BY d ORDER BY d
     `, params);
 
     const topProjRes = await query(`
       SELECT p.project_name AS name, SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END) AS hours
-      FROM time_entries te JOIN projects p ON p.id = te.project_id
+      FROM time_entries te
+      JOIN projects p ON p.id = te.project_id AND p.workspace_id = $2
+      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
       WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter} AND te.billable = TRUE
       GROUP BY p.project_name ORDER BY hours DESC LIMIT 5
     `, params);
 
     const topActivityRes = await query(`
       SELECT p.project_name AS name, SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END) AS hours
-      FROM time_entries te JOIN projects p ON p.id = te.project_id
+      FROM time_entries te
+      JOIN projects p ON p.id = te.project_id AND p.workspace_id = $2
+      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
       WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter} AND te.billable = FALSE
       GROUP BY p.project_name ORDER BY hours DESC LIMIT 5
     `, params);
@@ -112,23 +120,24 @@ router.get('/summary', async (req, res) => {
     };
 
     if (employeeId === 'all') {
-      let movementWhere = '';
-      const movementParams = [monthStart];
+      const movementConditions = [`workspace_id = $2`];
+      const movementParams = [monthStart, workspaceId];
       if (restrictToIds !== null) {
-        movementWhere = 'AND id = ANY($2::int[])';
+        movementConditions.push(`id = ANY($3::int[])`);
         movementParams.push(restrictToIds.length ? restrictToIds : [-1]);
       }
+      const movementWhere = movementConditions.join(' AND ');
       const movementRes = await query(`
         SELECT
-          (SELECT COUNT(*) FROM employees WHERE date_trunc('month', joining_date) = date_trunc('month', $1::date) ${movementWhere}) AS new_joinees,
-          (SELECT COUNT(*) FROM employees WHERE exit_date IS NOT NULL AND date_trunc('month', exit_date) = date_trunc('month', $1::date) ${movementWhere}) AS exited
+          (SELECT COUNT(*) FROM employees WHERE date_trunc('month', joining_date) = date_trunc('month', $1::date) AND ${movementWhere}) AS new_joinees,
+          (SELECT COUNT(*) FROM employees WHERE exit_date IS NOT NULL AND date_trunc('month', exit_date) = date_trunc('month', $1::date) AND ${movementWhere}) AS exited
       `, movementParams);
       payload.employeeMovement = {
         newJoinees: Number(movementRes.rows[0].new_joinees) || 0,
         exited: Number(movementRes.rows[0].exited) || 0,
       };
     } else {
-      const empRes = await query(`SELECT joining_date FROM employees WHERE id=$1`, [employeeId]);
+      const empRes = await query(`SELECT joining_date FROM employees WHERE id=$1 AND workspace_id=$2`, [employeeId, workspaceId]);
       if (empRes.rows.length && empRes.rows[0].joining_date) {
         const join = new Date(empRes.rows[0].joining_date);
         const now = new Date();

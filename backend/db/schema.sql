@@ -24,6 +24,20 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- A single login (email) can belong to more than one workspace (company),
+-- each with its own role - e.g. Admin in one company, plain User in another.
+-- users.workspace_id / users.role above are kept only for backward
+-- compatibility with earlier single-workspace deployments; from this point
+-- on, workspace_memberships is the source of truth for access + role.
+CREATE TABLE IF NOT EXISTS workspace_memberships (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE,
+  role VARCHAR(20) NOT NULL DEFAULT 'User',
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, workspace_id)
+);
+
 CREATE TABLE IF NOT EXISTS verification_codes (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -187,6 +201,7 @@ CREATE TABLE IF NOT EXISTS migration_log (
   step VARCHAR(200),
   status VARCHAR(20),
   detail TEXT,
+  workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE,
   run_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -204,3 +219,52 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS reporting_manager_id INTEGER REFERENCES employees(id) ON DELETE SET NULL;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS salary_currency VARCHAR(10) DEFAULT 'INR';
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS billable BOOLEAN DEFAULT TRUE;
+
+-- ============================================================
+-- Multi-tenant scoping: every piece of business data belongs to exactly
+-- one workspace (company). Added as nullable so existing rows aren't
+-- broken, then backfilled below for any deployment that had a single
+-- workspace before this change shipped.
+-- ============================================================
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE currencies ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE locations ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE project_categories ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE project_types ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE billing_basis ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE billing_frequencies ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE designations ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE migration_log ADD COLUMN IF NOT EXISTS workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE;
+
+-- Backfill: any deployment that only ever had a single workspace gets all
+-- of its existing (previously un-scoped) rows assigned to that workspace.
+-- Deployments with more than one workspace already are left alone (their
+-- rows should already be correctly scoped by the code that created them).
+DO $$
+DECLARE
+  only_workspace_id INTEGER;
+BEGIN
+  IF (SELECT COUNT(*) FROM workspaces) = 1 THEN
+    SELECT id INTO only_workspace_id FROM workspaces LIMIT 1;
+    UPDATE employees SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE projects SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE currencies SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE locations SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE project_categories SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE project_types SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE billing_basis SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE billing_frequencies SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE departments SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    UPDATE designations SET workspace_id = only_workspace_id WHERE workspace_id IS NULL;
+    -- Backfill workspace_memberships from the old single-workspace users.role
+    INSERT INTO workspace_memberships (user_id, workspace_id, role)
+    SELECT id, only_workspace_id, role FROM users WHERE workspace_id = only_workspace_id
+    ON CONFLICT (user_id, workspace_id) DO NOTHING;
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_employees_workspace ON employees(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_memberships_user ON workspace_memberships(user_id);

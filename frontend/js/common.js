@@ -180,27 +180,6 @@ function readPhoneInput(idPrefix){
 }
 
 /* ============================================================================
-   CHANGE PASSWORD MODAL (opened from the user dropdown on every page)
-   ============================================================================ */
-function openChangePasswordModal(){
-  openModal('Change Password', [
-    { key: 'currentPassword', label: 'Current Password', type: 'password' },
-    { key: 'newPassword', label: 'New Password', type: 'password' },
-    { key: 'confirmPassword', label: 'Confirm New Password', type: 'password' },
-  ], {}, async (values, close) => {
-    if (!values.currentPassword || !values.newPassword) { toast('Please fill in all fields.', 'error'); return; }
-    if (values.newPassword !== values.confirmPassword) { toast('New password and confirm password do not match.', 'error'); return; }
-    try {
-      await Api.put('/auth/me', { currentPassword: values.currentPassword, newPassword: values.newPassword });
-      toast('Password changed successfully.', 'success');
-      close();
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  });
-}
-
-/* ============================================================================
    APP SHELL (sidebar + topbar), injected into every protected page
    ============================================================================ */
 const SETTINGS_SUBMENU = [
@@ -229,6 +208,7 @@ async function initShell(activePage){
   const sidebarHtml = `
     <div class="sidebar">
       <div class="sidebar-brand">${peopleIconSVG(34, true)}<div class="sidebar-brand-text">Staff Allocation<br>Management</div></div>
+      <div class="workspace-chip" id="workspace-chip">${I('building')}<span id="workspace-chip-name">-</span></div>
       <div class="sidebar-nav" id="sidebar-nav"></div>
       <div class="sidebar-footer">© 2025 Staff Allocation<br>Management System<div class="ver">v1.0.0</div></div>
     </div>`;
@@ -249,7 +229,8 @@ async function initShell(activePage){
           ${I('chevDown')}
           <div class="dropdown-panel hidden" id="dd-user">
             <a href="profile.html">${I('user')} Profile</a>
-            <a id="change-pw-link">${I('lock')} Change Password</a>
+            <a href="change-password.html">${I('lock')} Change Password</a>
+            <a id="switch-ws-link">${I('building')} Switch Workspace</a>
             <a id="logout-link">${I('logout')} Logout</a>
           </div>
         </div>
@@ -277,11 +258,9 @@ async function initShell(activePage){
 
   document.getElementById('u-name').textContent = user?.name || '';
   document.getElementById('u-id').textContent = user?.employeeCode || '';
+  document.getElementById('workspace-chip-name').textContent = user?.workspaceName || '';
   document.getElementById('logout-link').onclick = logout;
-  document.getElementById('change-pw-link').onclick = () => {
-    document.getElementById('dd-user').classList.add('hidden');
-    openChangePasswordModal();
-  };
+  document.getElementById('switch-ws-link').onclick = () => { Session.clear(); location.href = 'login.html'; };
 
   document.getElementById('bell-wrap').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -349,6 +328,12 @@ function fmtDate(d){
   const dt = new Date(d);
   if (isNaN(dt)) return d;
   return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+/** "YYYY-MM" for a Date, using LOCAL calendar fields (never toISOString,
+    which shifts to UTC and can silently roll into the wrong month for
+    users east of UTC, e.g. India). */
+function localMonthValue(d){
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 function fmtMoney(n, currency){
   const num = Number(n) || 0;

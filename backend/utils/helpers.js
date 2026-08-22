@@ -32,8 +32,8 @@ async function getTeamScope(query, user) {
   if (user.role === 'Admin') return null;
   if (!user.employeeId) return [];
   const res = await query(
-    'SELECT id FROM employees WHERE id = $1 OR reporting_manager_id = $1',
-    [user.employeeId]
+    'SELECT id FROM employees WHERE workspace_id = $2 AND (id = $1 OR reporting_manager_id = $1)',
+    [user.employeeId, user.workspaceId]
   );
   return res.rows.map((r) => r.id);
 }

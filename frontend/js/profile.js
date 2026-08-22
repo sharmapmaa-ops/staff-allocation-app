@@ -30,6 +30,7 @@
         <div style="flex:1; min-width:280px;">
           <div class="form-grid" style="grid-template-columns:repeat(3,1fr);">
             <div class="field"><label>Employee ID</label><input value="${me.employeeCode || ''}" disabled></div>
+            <div class="field"><label>Workspace</label><input value="${me.workspaceName || ''}" disabled></div>
             <div class="field"><label>Full Name</label><input id="pr-name" value="${me.name || ''}"></div>
             <div class="field"><label>Email Address</label><input value="${me.email || ''}" disabled></div>
             <div class="field"><label>Contact Number</label>${phoneInputHtml('pr-contact', me.contact)}</div>

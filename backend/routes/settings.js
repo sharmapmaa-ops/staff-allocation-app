@@ -27,7 +27,7 @@ router.get('/:key', async (req, res) => {
   const def = resolveTable(req.params.key);
   if (!def) return res.status(404).json({ error: 'Unknown settings table.' });
   try {
-    const result = await query(`SELECT * FROM ${def.table} ORDER BY id ASC`);
+    const result = await query(`SELECT * FROM ${def.table} WHERE workspace_id=$1 ORDER BY id ASC`, [req.user.workspaceId]);
     res.json({ data: result.rows });
   } catch (err) {
     console.error(err);
@@ -45,10 +45,12 @@ router.post('/:key', requireAdmin, async (req, res) => {
       if (def.numeric?.includes(f)) v = Number(v) || 0;
       return v ?? null;
     });
-    const placeholders = def.fields.map((_, idx) => `$${idx + 1}`).join(',');
+    const fieldsWithWs = [...def.fields, 'workspace_id'];
+    const valuesWithWs = [...values, req.user.workspaceId];
+    const placeholders = fieldsWithWs.map((_, idx) => `$${idx + 1}`).join(',');
     const result = await query(
-      `INSERT INTO ${def.table} (${def.fields.join(',')}) VALUES (${placeholders}) RETURNING *`,
-      values
+      `INSERT INTO ${def.table} (${fieldsWithWs.join(',')}) VALUES (${placeholders}) RETURNING *`,
+      valuesWithWs
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -69,8 +71,8 @@ router.put('/:key/:id', requireAdmin, async (req, res) => {
     });
     const setClause = def.fields.map((f, idx) => `${f}=$${idx + 1}`).join(',');
     const result = await query(
-      `UPDATE ${def.table} SET ${setClause} WHERE id=$${def.fields.length + 1} RETURNING *`,
-      [...values, req.params.id]
+      `UPDATE ${def.table} SET ${setClause} WHERE id=$${def.fields.length + 1} AND workspace_id=$${def.fields.length + 2} RETURNING *`,
+      [...values, req.params.id, req.user.workspaceId]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Entry not found.' });
     res.json(result.rows[0]);
@@ -84,7 +86,7 @@ router.delete('/:key/:id', requireAdmin, async (req, res) => {
   const def = resolveTable(req.params.key);
   if (!def) return res.status(404).json({ error: 'Unknown settings table.' });
   try {
-    await query(`DELETE FROM ${def.table} WHERE id=$1`, [req.params.id]);
+    await query(`DELETE FROM ${def.table} WHERE id=$1 AND workspace_id=$2`, [req.params.id, req.user.workspaceId]);
     res.json({ message: 'Entry deleted.' });
   } catch (err) {
     console.error(err);

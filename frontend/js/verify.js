@@ -50,12 +50,15 @@
     btn.disabled = true; label.innerHTML = '<span class="spinner"></span> Verifying...';
     try {
       const res = await Api.post('/auth/verify', { tempToken, code });
-      Session.setSession(res.token, res.user);
       sessionStorage.removeItem('sa_temp_token');
       sessionStorage.removeItem('sa_verify_flow');
       sessionStorage.removeItem('sa_verify_notice');
-      toast('Signed in successfully. Welcome, ' + res.user.name + '!', 'success');
-      setTimeout(() => location.href = 'home.html', 500);
+
+      if (res.needsWorkspaceSelection) {
+        showWorkspacePicker(res.selectToken, res.workspaces);
+        return;
+      }
+      finishLogin(res);
     } catch (err) {
       showError(err.message);
       btn.disabled = false; label.textContent = 'Verify & Continue';
@@ -63,6 +66,37 @@
       boxes[0].focus();
     }
   });
+
+  function finishLogin(res){
+    Session.setSession(res.token, res.user);
+    toast('Signed in successfully. Welcome, ' + res.user.name + '!', 'success');
+    setTimeout(() => location.href = 'home.html', 500);
+  }
+
+  function showWorkspacePicker(selectToken, workspaces){
+    document.getElementById('otp-card').classList.add('hidden');
+    const wsCard = document.getElementById('workspace-card');
+    wsCard.classList.remove('hidden');
+    document.getElementById('workspace-icon').innerHTML = peopleIconSVG(46);
+    document.getElementById('workspace-list').innerHTML = workspaces.map(w => `
+      <div class="workspace-item" data-id="${w.workspaceId}">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="ws-icon">${I('building')}</div>
+          <div><div class="ws-name">${w.name}</div><div class="ws-role">${w.role}</div></div>
+        </div>
+        ${I('arrowRight')}
+      </div>`).join('');
+    document.querySelectorAll('.workspace-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        try {
+          const res = await Api.post('/auth/select-workspace', { selectToken, workspaceId: item.dataset.id });
+          finishLogin(res);
+        } catch (err) {
+          toast(err.message, 'error');
+        }
+      });
+    });
+  }
 
   let cooldown = 0;
   function tickResend(){

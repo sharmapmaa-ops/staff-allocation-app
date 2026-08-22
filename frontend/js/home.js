@@ -16,7 +16,7 @@
   const months = [];
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ value: d.toISOString().slice(0, 7), label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) });
+    months.push({ value: localMonthValue(d), label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) });
   }
   monthSelect.innerHTML = months.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
 

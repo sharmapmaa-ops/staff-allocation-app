@@ -17,13 +17,13 @@ router.post('/run', async (req, res) => {
     await client.query(schemaSql);
     log.push({ step: 'Schema', status: 'ok', detail: 'All tables verified / created' });
 
-    const seedLog = await seed(client);
+    const seedLog = await seed(client, req.user.workspaceId);
     log.push(...seedLog);
 
     for (const entry of log) {
       await query(
-        `INSERT INTO migration_log (step, status, detail) VALUES ($1,$2,$3)`,
-        [entry.step, entry.status, entry.detail]
+        `INSERT INTO migration_log (step, status, detail, workspace_id) VALUES ($1,$2,$3,$4)`,
+        [entry.step, entry.status, entry.detail, req.user.workspaceId]
       );
     }
 
@@ -40,7 +40,7 @@ router.post('/run', async (req, res) => {
 // GET /api/migration/history
 router.get('/history', async (req, res) => {
   try {
-    const result = await query(`SELECT * FROM migration_log ORDER BY run_at DESC LIMIT 100`);
+    const result = await query(`SELECT * FROM migration_log WHERE workspace_id=$1 ORDER BY run_at DESC LIMIT 100`, [req.user.workspaceId]);
     res.json({ data: result.rows });
   } catch (err) {
     // Table may not exist yet if migration has never run

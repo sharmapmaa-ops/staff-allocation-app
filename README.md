@@ -58,6 +58,37 @@ staff-allocation-app/
 
 ## 2. How the pieces fit together
 
+### Multi-workspace (multi-tenant) model
+This system is built to serve **many separate companies from one deployment**.
+Each company is a **workspace**. A single login (email) can belong to more
+than one workspace, with a different role in each:
+
+- **Register (Create Workspace)** always makes that person the **Admin** of
+  the new workspace. If the email already has a login elsewhere (e.g. they
+  registered a workspace before), entering the matching password just adds
+  a new workspace + Admin membership to that same login, rather than
+  rejecting it.
+- **Login → Verify (OTP)**: if the account belongs to exactly one workspace,
+  it signs straight in. If it belongs to more than one, it shows a workspace
+  picker first (`POST /api/auth/select-workspace`) before issuing the final
+  session.
+- **Every piece of business data is workspace-scoped**: employees, projects,
+  all Settings lookup tables (currencies, locations, departments, etc.), and
+  everything derived from them (dashboard, reports) are filtered by
+  `workspace_id` on every query. Two different companies using the same
+  deployment can never see each other's data.
+- **Admin can give any employee their own login** from the Employees page
+  (a lock icon appears next to employees who don't have one yet). Their
+  workspace role is taken from that employee's **Access Type** field
+  (Admin/User) — editing Access Type later keeps their access in sync.
+- **Any logged-in user (not just Admin) can Add employees/projects**; only
+  Admins can Edit or Delete them (enforced on the backend, not just hidden
+  in the UI).
+- **Reporting Manager scoping**: a non-admin whose employee record is set as
+  someone else's `reporting_manager_id` can see that person's data in Home
+  and Reports (their dropdown shows "My Team" instead of "All"). Admins
+  always see everyone in their own workspace.
+
 ### Auth + verification flow
 1. `POST /api/auth/register` (Create Workspace) or `POST /api/auth/login` validates
    credentials and returns a short-lived `tempToken` — it does **not** log the
@@ -243,6 +274,14 @@ Make sure `frontend/js/config.js` points `API_BASE` at
 ---
 
 ## 6. Known simplifications (by design, documented so nothing is a surprise)
+
+- **Shared demo accounts across workspaces**: Settings → Migration seeds two
+  demo logins (`john.doe@example.com`, `sarah.johnson@example.com`,
+  password `Password123!`). If more than one workspace runs the migration,
+  these same demo emails become members of *every* workspace that seeded
+  them (that's expected for a shared demo convenience — don't rely on them
+  for real access control; give real employees their own logins via
+  "Create Login" on the Employees page instead).
 
 - **Employee ↔ Login linking**: a real Postgres `users` row (login) and an
   `employees` row (HR record) are two separate tables linked by

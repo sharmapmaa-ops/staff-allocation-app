@@ -53,6 +53,7 @@
         <td class="row-actions">
           <button class="btn-icon edit" data-edit="${e.id}" ${shell.isAdmin ? '' : 'disabled'}>${I('edit')}</button>
           <button class="btn-icon delete" data-delete="${e.id}" ${shell.isAdmin ? '' : 'disabled'}>${I('trash')}</button>
+          ${shell.isAdmin && !e.user_id ? `<button class="btn-icon" data-create-login="${e.id}" title="Create Login">${I('lock')}</button>` : ''}
         </td>
       </tr>`).join('');
     const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -132,6 +133,22 @@
       if (!confirmAction('Delete this employee? This action cannot be undone.')) return;
       try { await Api.del('/employees/' + btn.dataset.delete); toast('Employee deleted.', 'success'); await loadEmployees(); renderAll(); }
       catch (err) { toast(err.message, 'error'); }
+    }));
+    document.querySelectorAll('[data-create-login]').forEach(btn => btn.addEventListener('click', () => {
+      const empId = btn.dataset.createLogin;
+      const emp = employees.find(e => String(e.id) === String(empId));
+      openModal(`Create Login for ${emp.full_name}`, [
+        { key: 'email', label: 'Email Address', default: emp.email || '' },
+        { key: 'password', label: 'Temporary Password', type: 'password' },
+      ], {}, async (values, close) => {
+        if (!values.email || !values.password) { toast('Please fill in both fields.', 'error'); return; }
+        try {
+          const res = await Api.post(`/employees/${empId}/create-login`, values);
+          toast(res.message, 'success');
+          close();
+          await loadEmployees(); renderAll();
+        } catch (err) { toast(err.message, 'error'); }
+      });
     }));
   }
 

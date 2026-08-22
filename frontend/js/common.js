@@ -207,10 +207,12 @@ async function initShell(activePage){
 
   const sidebarHtml = `
     <div class="sidebar">
-      <div class="sidebar-brand">${peopleIconSVG(34, true)}<div class="sidebar-brand-text">Staff Allocation<br>Management</div></div>
-      <div class="workspace-chip" id="workspace-chip">${I('building')}<span id="workspace-chip-name">-</span></div>
+      <div class="sidebar-brand">${peopleIconSVG(34, true)}<div class="sidebar-brand-text">Team<br>Management</div></div>
+      <div class="workspace-chip" id="workspace-chip">${I('building')}<span id="workspace-chip-name">-</span>${I('chevDown')}
+        <div class="dropdown-panel workspace-dd hidden" id="dd-workspace"></div>
+      </div>
       <div class="sidebar-nav" id="sidebar-nav"></div>
-      <div class="sidebar-footer">© 2025 Staff Allocation<br>Management System<div class="ver">v1.0.0</div></div>
+      <div class="sidebar-footer">© 2025 Team<br>Management System<div class="ver">v1.0.0</div></div>
     </div>`;
   const topbarHtml = `
     <div class="topbar">
@@ -230,7 +232,6 @@ async function initShell(activePage){
           <div class="dropdown-panel hidden" id="dd-user">
             <a href="profile.html">${I('user')} Profile</a>
             <a href="change-password.html">${I('lock')} Change Password</a>
-            <a id="switch-ws-link">${I('building')} Switch Workspace</a>
             <a id="logout-link">${I('logout')} Logout</a>
           </div>
         </div>
@@ -260,7 +261,39 @@ async function initShell(activePage){
   document.getElementById('u-id').textContent = user?.employeeCode || '';
   document.getElementById('workspace-chip-name').textContent = user?.workspaceName || '';
   document.getElementById('logout-link').onclick = logout;
-  document.getElementById('switch-ws-link').onclick = () => { Session.clear(); location.href = 'login.html'; };
+
+  document.getElementById('workspace-chip').addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const panel = document.getElementById('dd-workspace');
+    document.getElementById('dd-user')?.classList.add('hidden');
+    document.getElementById('dd-notif')?.classList.add('hidden');
+    const willOpen = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden');
+    if (willOpen) {
+      panel.innerHTML = `<div style="padding:14px; font-size:13px; color:var(--text-gray);">Loading...</div>`;
+      try {
+        const res = await Api.get('/auth/my-workspaces');
+        panel.innerHTML = res.workspaces.map(w => `
+          <a class="ws-dd-item ${w.workspaceId === res.currentWorkspaceId ? 'current' : ''}" data-id="${w.workspaceId}">
+            <span>${w.name}</span><span class="ws-dd-role">${w.role}</span>
+          </a>`).join('');
+        panel.querySelectorAll('.ws-dd-item').forEach(item => {
+          item.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            if (item.classList.contains('current')) { panel.classList.add('hidden'); return; }
+            try {
+              const switchRes = await Api.post('/auth/switch-workspace', { workspaceId: item.dataset.id });
+              Session.setSession(switchRes.token, switchRes.user);
+              toast(`Switched to ${switchRes.user.workspaceName}.`, 'success');
+              location.href = 'home.html';
+            } catch (err) { toast(err.message, 'error'); }
+          });
+        });
+      } catch (err) {
+        panel.innerHTML = `<div style="padding:14px; font-size:13px; color:var(--red-text);">Could not load workspaces.</div>`;
+      }
+    }
+  });
 
   document.getElementById('bell-wrap').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -275,6 +308,7 @@ async function initShell(activePage){
   document.addEventListener('click', () => {
     document.getElementById('dd-notif')?.classList.add('hidden');
     document.getElementById('dd-user')?.classList.add('hidden');
+    document.getElementById('dd-workspace')?.classList.add('hidden');
   });
 
   loadNotifications();
@@ -284,7 +318,7 @@ async function initShell(activePage){
 function setPageTitle(title, subtitle){
   const el = document.getElementById('page-title');
   if (el) el.innerHTML = `<h1>${title}</h1><p>${subtitle || ''}</p>`;
-  document.title = title + ' · Staff Allocation Management System';
+  document.title = title + ' · Team Management System';
 }
 
 async function loadNotifications(){

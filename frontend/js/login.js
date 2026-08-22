@@ -2,7 +2,7 @@
   // If already signed in, skip straight to the dashboard.
   if (Session.token()) { location.href = 'home.html'; return; }
 
-  document.getElementById('brand-logo').innerHTML = peopleIconSVG(46) + '<div class="brand-text">Staff Allocation<span>Management System</span></div>';
+  document.getElementById('brand-logo').innerHTML = peopleIconSVG(46) + '<div class="brand-text">Team<span>Management System</span></div>';
   document.getElementById('ic-users').innerHTML = I('users');
   document.getElementById('ic-clock').innerHTML = I('clock');
   document.getElementById('ic-bar').innerHTML = I('bar');

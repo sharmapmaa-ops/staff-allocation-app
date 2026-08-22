@@ -1,5 +1,5 @@
 (() => {
-  document.getElementById('brand-sm').innerHTML = peopleIconSVG(46) + '<div class="brand-text" style="font-size:22px;">Staff Allocation<span style="display:inline;"> Management System</span></div>';
+  document.getElementById('brand-sm').innerHTML = peopleIconSVG(46) + '<div class="brand-text" style="font-size:22px;">Team<span style="display:inline;"> Management System</span></div>';
   document.getElementById('env-icon').innerHTML = envelopeSVG();
   document.getElementById('assist-ic').innerHTML = I('mail');
   document.getElementById('ic-mail-wrap').innerHTML = I('mail') + document.getElementById('ic-mail-wrap').innerHTML;

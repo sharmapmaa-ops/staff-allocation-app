@@ -189,12 +189,10 @@ router.post('/verify', async (req, res) => {
     if (memberships.length === 0) {
       return res.status(403).json({ error: "Your account isn't a member of any workspace yet. Ask an administrator to add you, or create your own workspace." });
     }
-    if (memberships.length === 1) {
-      const m = memberships[0];
-      const result = await issueSessionForWorkspace(payload.userId, m.workspace_id, m.role);
-      return res.json(result);
-    }
 
+    // Always show the workspace picker after a successful code check - even
+    // when the account only has one workspace - so the flow (and the UI) is
+    // consistent no matter how many workspaces someone has access to.
     const selectToken = signTempToken({ type: 'select', userId: payload.userId });
     res.json({
       needsWorkspaceSelection: true,
@@ -276,6 +274,45 @@ router.post('/contact-admin', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Could not send your request. Please try again.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// GET /api/auth/my-workspaces - list of workspaces the CURRENT logged-in
+// account belongs to, for the always-visible workspace switcher.
+// ---------------------------------------------------------------
+router.get('/my-workspaces', requireAuth, async (req, res) => {
+  try {
+    const memberships = await getMemberships(req.user.userId);
+    res.json({
+      workspaces: memberships.map(m => ({ workspaceId: m.workspace_id, name: m.workspace_name, role: m.role })),
+      currentWorkspaceId: req.user.workspaceId,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load your workspaces.' });
+  }
+});
+
+// ---------------------------------------------------------------
+// POST /api/auth/switch-workspace  { workspaceId } - switch to a different
+// workspace you already have access to, without signing out or redoing
+// the OTP step.
+// ---------------------------------------------------------------
+router.post('/switch-workspace', requireAuth, async (req, res) => {
+  const { workspaceId } = req.body;
+  if (!workspaceId) return res.status(400).json({ error: 'workspaceId is required.' });
+  try {
+    const memRes = await query(
+      'SELECT role FROM workspace_memberships WHERE user_id=$1 AND workspace_id=$2',
+      [req.user.userId, workspaceId]
+    );
+    if (!memRes.rows.length) return res.status(403).json({ error: "You don't have access to that workspace." });
+    const result = await issueSessionForWorkspace(req.user.userId, Number(workspaceId), memRes.rows[0].role);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not switch workspace. Please try again.' });
   }
 });
 

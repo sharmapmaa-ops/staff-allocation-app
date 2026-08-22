@@ -3,8 +3,6 @@
   if (!shell) return;
   setPageTitle('Employees', 'Manage employee information and details.');
 
-  let tab = 'list';
-  let editingId = null;
   let page = 1, perPage = 10, total = 0;
   let search = '', payrollFilter = '', locationFilter = '', statusFilter = '';
   let employees = [];
@@ -22,27 +20,16 @@
     lookups.managers = employees;
   }
 
-  function renderTabs(){
-    document.getElementById('emp-tabstrip').innerHTML = `
-      <button class="${tab === 'list' ? 'active' : ''}" id="tab-list">${I('users')} Employee List</button>
-      <button class="${tab === 'add' ? 'active' : ''}" id="tab-add">${I('addUser')} Add New Employee</button>`;
-    document.getElementById('tab-list').addEventListener('click', () => { tab = 'list'; editingId = null; renderAll(); });
-    document.getElementById('tab-add').addEventListener('click', () => {
-      tab = 'add'; editingId = null; renderAll();
-    });
-  }
+  function statusPill(s){ return `<span class="pill ${s === 'Active' ? 'active' : s === 'Inactive' ? 'inactive' : 'onleave'}">${s}</span>`; }
 
   function renderAll(){
-    renderTabs();
-    document.getElementById('emp-panel').innerHTML = tab === 'list' ? renderListHtml() : renderFormHtml();
-    if (tab === 'list') attachListEvents(); else attachFormEvents();
+    document.getElementById('emp-panel').innerHTML = renderListHtml();
+    attachListEvents();
   }
-
-  function statusPill(s){ return `<span class="pill ${s === 'Active' ? 'active' : s === 'Inactive' ? 'inactive' : 'onleave'}">${s}</span>`; }
 
   function renderListHtml(){
     const rows = employees.map(e => `
-      <tr>
+      <tr class="clickable-row" data-id="${e.id}">
         <td>${e.employee_code}</td><td>${e.full_name}</td><td>${e.department || '—'}</td><td>${e.designation || '—'}</td>
         <td>${e.country}</td><td>${fmtDate(e.dob)}</td><td>${e.gender || '—'}</td><td>${e.contact_number || '—'}</td>
         <td>${fmtDate(e.joining_date)}</td><td>${e.exit_date ? fmtDate(e.exit_date) : '-'}</td>
@@ -50,47 +37,45 @@
         <td>₹ ${Number(e.gross_salary || 0).toLocaleString('en-IN')}.00</td>
         <td>${statusPill(e.status)}</td>
         <td><span class="pill ${e.access_type === 'Admin' ? 'active' : 'inactive'}">${e.access_type}</span></td>
-        <td class="row-actions">
-          <button class="btn-icon edit" data-edit="${e.id}" ${shell.isAdmin ? '' : 'disabled'}>${I('edit')}</button>
-          <button class="btn-icon delete" data-delete="${e.id}" ${shell.isAdmin ? '' : 'disabled'}>${I('trash')}</button>
-          ${shell.isAdmin && !e.user_id ? `<button class="btn-icon" data-create-login="${e.id}" title="Create Login">${I('lock')}</button>` : ''}
-        </td>
+        <td>${e.user_id ? `<span class="badge-check yes">${I('check')}</span>` : `<span class="badge-check no">${I('x')}</span>`}</td>
       </tr>`).join('');
     const totalPages = Math.max(1, Math.ceil(total / perPage));
     const uniq = arr => [...new Set(arr.filter(Boolean))];
     return `
-      <div class="toolbar">
-        <div class="search-box">${I('search')}<input id="emp-search" placeholder="Search by Employee ID, Name..." value="${search}"></div>
-        <select id="filter-payroll"><option value="">All Payroll Types</option>${uniq(employees.map(e => e.payroll_type)).map(v => `<option ${payrollFilter === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
-        <select id="filter-location"><option value="">All Locations</option>${uniq(lookups.locations.map(l => l.name)).map(v => `<option ${locationFilter === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
-        <select id="filter-status"><option value="">All Statuses</option><option ${statusFilter === 'Active' ? 'selected' : ''}>Active</option><option ${statusFilter === 'Inactive' ? 'selected' : ''}>Inactive</option><option ${statusFilter === 'On Leave' ? 'selected' : ''}>On Leave</option></select>
-        <button class="filters-btn" id="clear-filters">${I('filter')} Clear Filters</button>
-      </div>
-      <div class="table-scroll"><table class="data-table">
-        <thead><tr>
-          <th>Employee ID</th><th>Employee Full Name</th><th>Department</th><th>Designation</th><th>Country</th><th>Date of Birth</th>
-          <th>Gender</th><th>Contact Number</th><th>Joining Date</th><th>Exit Date</th><th>Payroll Type</th><th>Location</th>
-          <th>Gross Salary</th><th>Status</th><th>Access Type</th><th>Actions</th>
-        </tr></thead>
-        <tbody>${rows || `<tr><td colspan="16" style="text-align:center;color:#9ca3af;padding:30px;">No employees match your filters.</td></tr>`}</tbody>
-      </table></div>
-      <div class="table-footer">
-        <div class="count">Showing ${total ? ((page - 1) * perPage + 1) : 0} to ${Math.min(page * perPage, total)} of ${total} employees</div>
-        <div class="pagination">
-          <button id="pg-prev" ${page === 1 ? 'disabled' : ''}>${I('arrowLeft')}</button>
-          ${Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 6).map(n => `<button class="pg-num ${page === n ? 'active' : ''}" data-page="${n}">${n}</button>`).join('')}
-          <button id="pg-next" ${page === totalPages ? 'disabled' : ''}>${I('arrowRight')}</button>
+      <div class="panel no-tabs">
+        <div class="toolbar">
+          <div class="search-box">${I('search')}<input id="emp-search" placeholder="Search by Employee ID, Name..." value="${search}"></div>
+          <select id="filter-payroll"><option value="">All Payroll Types</option>${uniq(employees.map(e => e.payroll_type)).map(v => `<option ${payrollFilter === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+          <select id="filter-location"><option value="">All Locations</option>${uniq(lookups.locations.map(l => l.name)).map(v => `<option ${locationFilter === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+          <select id="filter-status"><option value="">All Statuses</option><option ${statusFilter === 'Active' ? 'selected' : ''}>Active</option><option ${statusFilter === 'Inactive' ? 'selected' : ''}>Inactive</option><option ${statusFilter === 'On Leave' ? 'selected' : ''}>On Leave</option></select>
+          <button class="filters-btn" id="clear-filters">${I('filter')} Clear Filters</button>
+          <button class="btn btn-primary" id="add-employee-btn">${I('addUser')} Add New Employee</button>
+        </div>
+        <div class="table-scroll"><table class="data-table">
+          <thead><tr>
+            <th>Employee ID</th><th>Employee Full Name</th><th>Department</th><th>Designation</th><th>Country</th><th>Date of Birth</th>
+            <th>Gender</th><th>Contact Number</th><th>Joining Date</th><th>Exit Date</th><th>Payroll Type</th><th>Location</th>
+            <th>Gross Salary</th><th>Status</th><th>Access Type</th><th>Has Login</th>
+          </tr></thead>
+          <tbody>${rows || `<tr><td colspan="16" style="text-align:center;color:#9ca3af;padding:30px;">No employees match your filters.</td></tr>`}</tbody>
+        </table></div>
+        <div class="table-footer">
+          <div class="count">Showing ${total ? ((page - 1) * perPage + 1) : 0} to ${Math.min(page * perPage, total)} of ${total} employees</div>
+          <div class="pagination">
+            <button id="pg-prev" ${page === 1 ? 'disabled' : ''}>${I('arrowLeft')}</button>
+            ${Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 6).map(n => `<button class="pg-num ${page === n ? 'active' : ''}" data-page="${n}">${n}</button>`).join('')}
+            <button id="pg-next" ${page === totalPages ? 'disabled' : ''}>${I('arrowRight')}</button>
+          </div>
         </div>
       </div>`;
   }
 
-  function renderFormHtml(){
-    const e = editingId ? employees.find(x => x.id === editingId) : {};
-    const managerOptions = lookups.managers.filter(m => m.id !== editingId);
+  function formFieldsHtml(e){
+    const managerOptions = lookups.managers.filter(m => m.id !== e.id);
     return `
       <h3 class="section-title" style="color:var(--text-dark);">Personal Information</h3>
       <div class="form-grid">
-        <div class="field"><label>Employee ID</label><input id="ef-id" placeholder="Auto-generated if left blank" value="${e.employee_code || ''}" ${editingId ? 'disabled' : ''}></div>
+        <div class="field"><label>Employee ID</label><input id="ef-id" placeholder="Auto-generated if left blank" value="${e.employee_code || ''}" ${e.id ? 'disabled' : ''}></div>
         <div class="field"><label>Full Name <span class="req">*</span></label><input id="ef-name" value="${e.full_name || ''}"></div>
         <div class="field"><label>Email Address</label><input id="ef-email" value="${e.email || ''}"></div>
         <div class="field"><label>Contact Number <span class="req">*</span></label>${phoneInputHtml('ef-contact', e.contact_number)}</div>
@@ -112,11 +97,85 @@
         <div class="field"><label>Status <span class="req">*</span></label><select id="ef-status"><option ${e.status === 'Active' ? 'selected' : ''}>Active</option><option ${e.status === 'Inactive' ? 'selected' : ''}>Inactive</option><option ${e.status === 'On Leave' ? 'selected' : ''}>On Leave</option></select></div>
         <div class="field"><label>Joining Date <span class="req">*</span></label><input id="ef-joining" type="date" value="${e.joining_date ? e.joining_date.slice(0, 10) : ''}"></div>
         <div class="field"><label>Exit Date</label><input id="ef-exit" type="date" value="${e.exit_date ? e.exit_date.slice(0, 10) : ''}"></div>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-outline" id="ef-cancel">Cancel</button>
-        <button class="btn btn-primary" id="ef-save">${I('save')} Save Employee</button>
       </div>`;
+  }
+
+  function openEmployeeModal(employee){
+    const e = employee || {};
+    const isEdit = Boolean(e.id);
+    const readOnly = !shell.isAdmin;
+    const root = document.getElementById('modal-root') || (() => { const d = document.createElement('div'); d.id = 'modal-root'; document.body.appendChild(d); return d; })();
+    root.innerHTML = `
+      <div class="modal-overlay" id="emp-modal-overlay">
+        <div class="modal-box" style="width:900px;">
+          <button class="modal-close btn-icon" id="emp-modal-close">${I('x')}</button>
+          <h3>${isEdit ? e.full_name : 'Add New Employee'}</h3>
+          <div id="emp-form-fields">${formFieldsHtml(e)}</div>
+          ${isEdit && shell.isAdmin && !e.user_id ? `<button class="btn btn-outline" id="emp-create-login-btn" style="margin-top:14px;">${I('lock')} Create Login</button>` : ''}
+          <div class="form-actions">
+            ${isEdit && shell.isAdmin ? `<button class="btn btn-danger-outline" id="emp-delete-btn" style="margin-right:auto;">${I('trash')} Delete</button>` : ''}
+            <button class="btn btn-outline" id="emp-cancel-btn">${readOnly ? 'Close' : 'Cancel'}</button>
+            ${!readOnly ? `<button class="btn btn-primary" id="emp-save-btn">${I('save')} Save Employee</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    if (readOnly) {
+      root.querySelectorAll('#emp-form-fields input, #emp-form-fields select, #emp-form-fields textarea').forEach(el => { el.disabled = true; });
+    }
+    const close = () => { root.innerHTML = ''; };
+    document.getElementById('emp-modal-close').onclick = close;
+    document.getElementById('emp-cancel-btn').onclick = close;
+    document.getElementById('emp-modal-overlay').addEventListener('click', (ev) => { if (ev.target.id === 'emp-modal-overlay') close(); });
+
+    document.getElementById('emp-create-login-btn')?.addEventListener('click', () => {
+      openModal(`Create Login for ${e.full_name}`, [
+        { key: 'email', label: 'Email Address', default: e.email || '' },
+        { key: 'password', label: 'Temporary Password', type: 'password' },
+      ], {}, async (values, closeInner) => {
+        if (!values.email || !values.password) { toast('Please fill in both fields.', 'error'); return; }
+        try {
+          const res = await Api.post(`/employees/${e.id}/create-login`, values);
+          toast(res.message, 'success');
+          closeInner();
+          close();
+          await loadEmployees(); renderAll();
+        } catch (err) { toast(err.message, 'error'); }
+      });
+    });
+
+    document.getElementById('emp-delete-btn')?.addEventListener('click', async () => {
+      if (!confirmAction('Delete this employee? This action cannot be undone.')) return;
+      try {
+        await Api.del('/employees/' + e.id);
+        toast('Employee deleted.', 'success');
+        close();
+        await loadEmployees(); renderAll();
+      } catch (err) { toast(err.message, 'error'); }
+    });
+
+    document.getElementById('emp-save-btn')?.addEventListener('click', async () => {
+      const get = id => document.getElementById(id).value;
+      const payload = {
+        employeeCode: get('ef-id') || undefined, name: get('ef-name'), email: get('ef-email'), contact: readPhoneInput('ef-contact'),
+        dob: get('ef-dob') || null, gender: get('ef-gender'), payroll: get('ef-payroll'), dept: get('ef-dept'),
+        desig: get('ef-desig'), location: get('ef-location'), accessType: get('ef-accesstype'),
+        reportingManagerId: get('ef-manager') || null, salaryCurrency: get('ef-currency'),
+        salary: Number(get('ef-salary')) || 0, status: get('ef-status'), joining: get('ef-joining') || null, exit: get('ef-exit') || null,
+      };
+      if (!payload.name || !payload.contact) { toast('Please fill all required fields.', 'error'); return; }
+      const btn = document.getElementById('emp-save-btn'); const original = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...';
+      try {
+        if (isEdit) await Api.put('/employees/' + e.id, payload);
+        else await Api.post('/employees', payload);
+        toast('Employee saved successfully.', 'success');
+        close();
+        await loadEmployees(); renderAll();
+      } catch (err) {
+        toast(err.message, 'error');
+        btn.disabled = false; btn.innerHTML = original;
+      }
+    });
   }
 
   function attachListEvents(){
@@ -128,54 +187,12 @@
     document.getElementById('pg-prev')?.addEventListener('click', async () => { page--; await loadEmployees(); renderAll(); });
     document.getElementById('pg-next')?.addEventListener('click', async () => { page++; await loadEmployees(); renderAll(); });
     document.querySelectorAll('.pg-num').forEach(btn => btn.addEventListener('click', async () => { page = Number(btn.dataset.page); await loadEmployees(); renderAll(); }));
-    document.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => { editingId = Number(btn.dataset.edit); tab = 'add'; renderAll(); }));
-    document.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', async () => {
-      if (!confirmAction('Delete this employee? This action cannot be undone.')) return;
-      try { await Api.del('/employees/' + btn.dataset.delete); toast('Employee deleted.', 'success'); await loadEmployees(); renderAll(); }
-      catch (err) { toast(err.message, 'error'); }
-    }));
-    document.querySelectorAll('[data-create-login]').forEach(btn => btn.addEventListener('click', () => {
-      const empId = btn.dataset.createLogin;
-      const emp = employees.find(e => String(e.id) === String(empId));
-      openModal(`Create Login for ${emp.full_name}`, [
-        { key: 'email', label: 'Email Address', default: emp.email || '' },
-        { key: 'password', label: 'Temporary Password', type: 'password' },
-      ], {}, async (values, close) => {
-        if (!values.email || !values.password) { toast('Please fill in both fields.', 'error'); return; }
-        try {
-          const res = await Api.post(`/employees/${empId}/create-login`, values);
-          toast(res.message, 'success');
-          close();
-          await loadEmployees(); renderAll();
-        } catch (err) { toast(err.message, 'error'); }
+    document.getElementById('add-employee-btn').addEventListener('click', () => openEmployeeModal(null));
+    document.querySelectorAll('tr.clickable-row').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const emp = employees.find(x => String(x.id) === tr.dataset.id);
+        if (emp) openEmployeeModal(emp);
       });
-    }));
-  }
-
-  function attachFormEvents(){
-    document.getElementById('ef-cancel').addEventListener('click', () => { tab = 'list'; renderAll(); });
-    document.getElementById('ef-save').addEventListener('click', async () => {
-      const get = id => document.getElementById(id).value;
-      const payload = {
-        employeeCode: get('ef-id') || undefined, name: get('ef-name'), email: get('ef-email'), contact: readPhoneInput('ef-contact'),
-        dob: get('ef-dob') || null, gender: get('ef-gender'), payroll: get('ef-payroll'), dept: get('ef-dept'),
-        desig: get('ef-desig'), location: get('ef-location'), accessType: get('ef-accesstype'),
-        reportingManagerId: get('ef-manager') || null, salaryCurrency: get('ef-currency'),
-        salary: Number(get('ef-salary')) || 0, status: get('ef-status'), joining: get('ef-joining') || null, exit: get('ef-exit') || null,
-      };
-      if (!payload.name || !payload.contact) { toast('Please fill all required fields.', 'error'); return; }
-      const btn = document.getElementById('ef-save'); const original = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...';
-      try {
-        if (editingId) await Api.put('/employees/' + editingId, payload);
-        else await Api.post('/employees', payload);
-        toast('Employee saved successfully.', 'success');
-        tab = 'list'; editingId = null;
-        await loadEmployees(); renderAll();
-      } catch (err) {
-        toast(err.message, 'error');
-        btn.disabled = false; btn.innerHTML = original;
-      }
     });
   }
 

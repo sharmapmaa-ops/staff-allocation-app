@@ -65,45 +65,47 @@ router.get('/summary', async (req, res) => {
       paramIndex++;
     }
 
-    const totalsRes = await query(`
-      SELECT
-        COALESCE(SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END),0) AS billable,
-        COALESCE(SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END),0) AS non_billable
-      FROM time_entries te
-      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
-      WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter}
-    `, params);
+    // Run these 4 independent queries in parallel instead of one-by-one -
+    // each network round-trip to the database adds latency, so this alone
+    // can cut this endpoint's response time by roughly 3-4x.
+    const [totalsRes, dailyRes, topProjRes, topActivityRes] = await Promise.all([
+      query(`
+        SELECT
+          COALESCE(SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END),0) AS billable,
+          COALESCE(SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END),0) AS non_billable
+        FROM time_entries te
+        JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
+        WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter}
+      `, params),
+      query(`
+        SELECT te.work_date::date AS d,
+               COALESCE(SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END),0) AS billable,
+               COALESCE(SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END),0) AS non_billable
+        FROM time_entries te
+        JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
+        WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter}
+        GROUP BY d ORDER BY d
+      `, params),
+      query(`
+        SELECT p.project_name AS name, SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END) AS hours
+        FROM time_entries te
+        JOIN projects p ON p.id = te.project_id AND p.workspace_id = $2
+        JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
+        WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter} AND te.billable = TRUE
+        GROUP BY p.project_name ORDER BY hours DESC LIMIT 5
+      `, params),
+      query(`
+        SELECT p.project_name AS name, SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END) AS hours
+        FROM time_entries te
+        JOIN projects p ON p.id = te.project_id AND p.workspace_id = $2
+        JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
+        WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter} AND te.billable = FALSE
+        GROUP BY p.project_name ORDER BY hours DESC LIMIT 5
+      `, params),
+    ]);
     const billable = Number(totalsRes.rows[0].billable) || 0;
     const nonBillable = Number(totalsRes.rows[0].non_billable) || 0;
     const total = billable + nonBillable;
-
-    const dailyRes = await query(`
-      SELECT te.work_date::date AS d,
-             COALESCE(SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END),0) AS billable,
-             COALESCE(SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END),0) AS non_billable
-      FROM time_entries te
-      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
-      WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter}
-      GROUP BY d ORDER BY d
-    `, params);
-
-    const topProjRes = await query(`
-      SELECT p.project_name AS name, SUM(CASE WHEN te.billable THEN te.hours ELSE 0 END) AS hours
-      FROM time_entries te
-      JOIN projects p ON p.id = te.project_id AND p.workspace_id = $2
-      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
-      WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter} AND te.billable = TRUE
-      GROUP BY p.project_name ORDER BY hours DESC LIMIT 5
-    `, params);
-
-    const topActivityRes = await query(`
-      SELECT p.project_name AS name, SUM(CASE WHEN NOT te.billable THEN te.hours ELSE 0 END) AS hours
-      FROM time_entries te
-      JOIN projects p ON p.id = te.project_id AND p.workspace_id = $2
-      JOIN employees emp ON emp.id = te.employee_id AND emp.workspace_id = $2
-      WHERE date_trunc('month', te.work_date) = date_trunc('month', $1::date) ${empFilter} AND te.billable = FALSE
-      GROUP BY p.project_name ORDER BY hours DESC LIMIT 5
-    `, params);
 
     const daysInMonth = new Date(new Date(monthStart).getFullYear(), new Date(monthStart).getMonth() + 1, 0).getDate();
 

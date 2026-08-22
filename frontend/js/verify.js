@@ -4,7 +4,7 @@
   const notice = sessionStorage.getItem('sa_verify_notice');
   if (!tempToken) { location.href = 'login.html'; return; }
 
-  document.getElementById('brand-sm').innerHTML = peopleIconSVG(46) + '<div class="brand-text" style="font-size:22px;">Staff Allocation<span style="display:inline;"> Management System</span></div>';
+  document.getElementById('brand-sm').innerHTML = peopleIconSVG(46) + '<div class="brand-text" style="font-size:22px;">Team<span style="display:inline;"> Management System</span></div>';
   document.getElementById('shield-icon').innerHTML = shieldSVG();
   document.getElementById('verify-sub').textContent = flow === 'register'
     ? 'Enter the 6-digit code to activate your new workspace.'

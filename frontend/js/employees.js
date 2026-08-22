@@ -8,11 +8,11 @@
   let page = 1, perPage = 10, total = 0;
   let search = '', payrollFilter = '', locationFilter = '', statusFilter = '';
   let employees = [];
-  let lookups = { departments: [], designations: [], locations: [], managers: [] };
+  let lookups = { departments: [], designations: [], locations: [], managers: [], currencies: [] };
 
   async function loadLookups(){
-    const [dept, desig, loc] = await Promise.all([Api.get('/settings/departments'), Api.get('/settings/designations'), Api.get('/settings/locations')]);
-    lookups.departments = dept.data; lookups.designations = desig.data; lookups.locations = loc.data;
+    const [dept, desig, loc, curr] = await Promise.all([Api.get('/settings/departments'), Api.get('/settings/designations'), Api.get('/settings/locations'), Api.get('/settings/currencies')]);
+    lookups.departments = dept.data; lookups.designations = desig.data; lookups.locations = loc.data; lookups.currencies = curr.data;
   }
 
   async function loadEmployees(){
@@ -85,13 +85,14 @@
 
   function renderFormHtml(){
     const e = editingId ? employees.find(x => x.id === editingId) : {};
+    const managerOptions = lookups.managers.filter(m => m.id !== editingId);
     return `
       <h3 class="section-title" style="color:var(--text-dark);">Personal Information</h3>
       <div class="form-grid">
         <div class="field"><label>Employee ID</label><input id="ef-id" placeholder="Auto-generated if left blank" value="${e.employee_code || ''}" ${editingId ? 'disabled' : ''}></div>
         <div class="field"><label>Full Name <span class="req">*</span></label><input id="ef-name" value="${e.full_name || ''}"></div>
         <div class="field"><label>Email Address</label><input id="ef-email" value="${e.email || ''}"></div>
-        <div class="field"><label>Contact Number <span class="req">*</span></label><input id="ef-contact" value="${e.contact_number || ''}"></div>
+        <div class="field"><label>Contact Number <span class="req">*</span></label>${phoneInputHtml('ef-contact', e.contact_number)}</div>
         <div class="field"><label>Date of Birth</label><input id="ef-dob" type="date" value="${e.dob ? e.dob.slice(0, 10) : ''}"></div>
         <div class="field"><label>Gender</label><select id="ef-gender"><option value="">Select gender</option><option ${e.gender === 'Male' ? 'selected' : ''}>Male</option><option ${e.gender === 'Female' ? 'selected' : ''}>Female</option><option ${e.gender === 'Other' ? 'selected' : ''}>Other</option></select></div>
       </div>
@@ -101,11 +102,12 @@
         <div class="field"><label>Department</label><select id="ef-dept"><option value="">Select department</option>${lookups.departments.map(d => `<option ${e.department === d.name ? 'selected' : ''}>${d.name}</option>`).join('')}</select></div>
         <div class="field"><label>Designation</label><select id="ef-desig"><option value="">Select designation</option>${lookups.designations.map(d => `<option ${e.designation === d.name ? 'selected' : ''}>${d.name}</option>`).join('')}</select></div>
         <div class="field"><label>Location</label><select id="ef-location"><option value="">Select location</option>${lookups.locations.map(l => `<option ${e.location === l.name ? 'selected' : ''}>${l.name}</option>`).join('')}</select></div>
+        <div class="field"><label>Reporting Manager</label><select id="ef-manager"><option value="">Select reporting manager</option>${managerOptions.map(m => `<option value="${m.id}" ${e.reporting_manager_id === m.id ? 'selected' : ''}>${m.full_name} (${m.employee_code})</option>`).join('')}</select></div>
         <div class="field"><label>Access Type <span class="req">*</span></label><select id="ef-accesstype"><option value="User" ${e.access_type !== 'Admin' ? 'selected' : ''}>User</option><option value="Admin" ${e.access_type === 'Admin' ? 'selected' : ''}>Admin</option></select></div>
       </div>
       <h3 class="section-title" style="color:var(--text-dark); margin-top:22px;">Employment Details</h3>
       <div class="form-grid">
-        <div class="field"><label>Gross Salary <span class="req">*</span></label><input id="ef-salary" type="number" value="${e.gross_salary || ''}"></div>
+        <div class="field"><label>Gross Salary <span class="req">*</span></label><div class="phone-group"><select id="ef-currency" style="width:90px;">${(lookups.currencies || []).map(c => `<option value="${c.code}" ${e.salary_currency === c.code ? 'selected' : ''}>${c.symbol} ${c.code}</option>`).join('')}</select><input id="ef-salary" type="number" value="${e.gross_salary || ''}"></div></div>
         <div class="field"><label>Status <span class="req">*</span></label><select id="ef-status"><option ${e.status === 'Active' ? 'selected' : ''}>Active</option><option ${e.status === 'Inactive' ? 'selected' : ''}>Inactive</option><option ${e.status === 'On Leave' ? 'selected' : ''}>On Leave</option></select></div>
         <div class="field"><label>Joining Date <span class="req">*</span></label><input id="ef-joining" type="date" value="${e.joining_date ? e.joining_date.slice(0, 10) : ''}"></div>
         <div class="field"><label>Exit Date</label><input id="ef-exit" type="date" value="${e.exit_date ? e.exit_date.slice(0, 10) : ''}"></div>
@@ -138,9 +140,10 @@
     document.getElementById('ef-save').addEventListener('click', async () => {
       const get = id => document.getElementById(id).value;
       const payload = {
-        employeeCode: get('ef-id') || undefined, name: get('ef-name'), email: get('ef-email'), contact: get('ef-contact'),
+        employeeCode: get('ef-id') || undefined, name: get('ef-name'), email: get('ef-email'), contact: readPhoneInput('ef-contact'),
         dob: get('ef-dob') || null, gender: get('ef-gender'), payroll: get('ef-payroll'), dept: get('ef-dept'),
         desig: get('ef-desig'), location: get('ef-location'), accessType: get('ef-accesstype'),
+        reportingManagerId: get('ef-manager') || null, salaryCurrency: get('ef-currency'),
         salary: Number(get('ef-salary')) || 0, status: get('ef-status'), joining: get('ef-joining') || null, exit: get('ef-exit') || null,
       };
       if (!payload.name || !payload.contact) { toast('Please fill all required fields.', 'error'); return; }

@@ -47,10 +47,11 @@
         <td>${p.project_code}</td><td>${p.project_name}</td><td>${p.client_name || '—'}</td><td>${p.category || '—'}</td>
         <td>${pill(p.status)}</td><td>${p.project_type || '—'}</td><td>${p.billing_frequency || '—'}</td>
         <td>${p.sow_available ? `<span class="badge-check yes">${I('check')}</span>` : `<span class="badge-check no">${I('x')}</span>`}</td>
+        <td>${p.billable !== false ? `<span class="badge-check yes">${I('check')}</span>` : `<span class="badge-check no">${I('x')}</span>`}</td>
         <td>${p.project_manager || '—'}</td><td>${p.billing_basis || '—'}</td><td>${p.hours_capping || 0}</td>
         <td>${p.gp_margin || 0}%</td><td>${Number(p.rate || 0).toFixed(2)}</td><td>${p.currency}</td>
         <td>${p.description || '—'}</td><td>${p.comments || '—'}</td><td>${p.additional_notes || '—'}</td>
-        <td>${fmtDate(p.start_date)}</td>
+        <td>${fmtDate(p.start_date)}</td><td>${fmtDate(p.end_date)}</td>
         <td class="row-actions">
           <button class="btn-icon edit" data-edit="${p.id}" ${shell.isAdmin ? '' : 'disabled'}>${I('edit')}</button>
           <button class="btn-icon delete" data-delete="${p.id}" ${shell.isAdmin ? '' : 'disabled'}>${I('trash')}</button>
@@ -63,10 +64,10 @@
       <div class="table-scroll"><table class="data-table">
         <thead><tr>
           <th>Project ID</th><th>Project Name</th><th>Client Name</th><th>Category</th><th>Status</th><th>Project Type</th>
-          <th>Billing Frequency</th><th>SOW Available</th><th>Project Manager</th><th>Billing Basis</th><th>Hours Capping</th>
-          <th>GP Margin (%)</th><th>Rate</th><th>Currency</th><th>Description</th><th>Comments</th><th>Additional Notes</th><th>Start Date</th><th>Actions</th>
+          <th>Billing Frequency</th><th>SOW Available</th><th>Billable</th><th>Project Manager</th><th>Billing Basis</th><th>Hours Capping</th>
+          <th>GP Margin (%)</th><th>Rate</th><th>Currency</th><th>Description</th><th>Comments</th><th>Additional Notes</th><th>Start Date</th><th>End Date</th><th>Actions</th>
         </tr></thead>
-        <tbody>${rows || `<tr><td colspan="19" style="text-align:center;color:#9ca3af;padding:30px;">No projects found.</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="21" style="text-align:center;color:#9ca3af;padding:30px;">No projects found.</td></tr>`}</tbody>
       </table></div>
       <div class="table-footer"><div class="count">Showing 1 to ${projects.length} of ${projects.length} projects</div></div>`;
   }
@@ -91,6 +92,7 @@
         <div class="field"><label>End Date</label><input id="pf-end" type="date" value="${p.end_date ? p.end_date.slice(0, 10) : ''}"></div>
         <div class="field"><label>Billing Frequency <span class="req">*</span></label><select id="pf-billfreq">${lookups.billFreq.map(b => `<option ${p.billing_frequency === b.name ? 'selected' : ''}>${b.name}</option>`).join('')}</select></div>
         <div class="field"><label>SOW Available? <span class="req">*</span></label><select id="pf-sow"><option value="Yes" ${p.sow_available ? 'selected' : ''}>Yes</option><option value="No" ${!p.sow_available ? 'selected' : ''}>No</option></select></div>
+        <div class="field"><label>Billable?</label><div class="check-row" style="display:flex;align-items:center;gap:8px;height:40px;"><input type="checkbox" id="pf-billable" ${p.billable !== false ? 'checked' : ''} style="width:18px;height:18px;"><span>Billable project</span></div></div>
 
         <div class="field"><label>Project Manager <span class="req">*</span></label><select id="pf-manager">${lookups.employees.map(e => `<option ${p.project_manager === e.full_name ? 'selected' : ''}>${e.full_name}</option>`).join('')}</select></div>
         <div class="field"><label>Billing Basis <span class="req">*</span></label><select id="pf-billbasis">${lookups.billBasis.map(b => `<option ${p.billing_basis === b.name ? 'selected' : ''}>${b.name}</option>`).join('')}</select></div>
@@ -134,6 +136,7 @@
       const payload = {
         id: get('pf-id') || undefined, name: get('pf-name'), client: get('pf-client'), category: get('pf-category'),
         status: get('pf-status'), type: get('pf-type'), billFreq: get('pf-billfreq'), sow: get('pf-sow') === 'Yes',
+        billable: document.getElementById('pf-billable').checked,
         manager: get('pf-manager'), billBasis: get('pf-billbasis'), capping: Number(get('pf-capping')) || 0,
         gp: Number(get('pf-gp')) || 0, rate: Number(get('pf-rate')) || 0, currency: get('pf-currency'),
         desc: get('pf-desc'), comments: get('pf-comments'), notes: get('pf-notes'),

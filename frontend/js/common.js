@@ -145,15 +145,82 @@ function openModal(title, fields, data, onSave){
 function confirmAction(msg){ return window.confirm(msg); }
 
 /* ============================================================================
+   PHONE / COUNTRY CODE HELPER (shared by Employees, Profile forms)
+   ============================================================================ */
+const COUNTRY_CODES = [
+  { code: '+91', flag: '🇮🇳', name: 'India' },
+  { code: '+1', flag: '🇺🇸', name: 'USA' },
+  { code: '+44', flag: '🇬🇧', name: 'UK' },
+  { code: '+61', flag: '🇦🇺', name: 'Australia' },
+  { code: '+971', flag: '🇦🇪', name: 'UAE' },
+  { code: '+65', flag: '🇸🇬', name: 'Singapore' },
+  { code: '+49', flag: '🇩🇪', name: 'Germany' },
+  { code: '+1', flag: '🇨🇦', name: 'Canada' },
+];
+/** Splits a stored "+91 987 654 3210" style string into { code, number }. */
+function splitPhone(full){
+  if (!full) return { code: '+91', number: '' };
+  const match = String(full).trim().match(/^(\+\d{1,4})\s*(.*)$/);
+  if (match) return { code: match[1], number: match[2] };
+  return { code: '+91', number: full };
+}
+/** Renders a country-code select + phone number input as one flex group. */
+function phoneInputHtml(idPrefix, fullValue){
+  const { code, number } = splitPhone(fullValue);
+  return `<div class="phone-group">
+    <select id="${idPrefix}-code">${COUNTRY_CODES.map(c => `<option value="${c.code}" ${c.code === code ? 'selected' : ''}>${c.flag} ${c.code}</option>`).join('')}</select>
+    <input id="${idPrefix}-number" type="text" placeholder="Enter contact number" value="${number}">
+  </div>`;
+}
+function readPhoneInput(idPrefix){
+  const codeEl = document.getElementById(`${idPrefix}-code`);
+  const numEl = document.getElementById(`${idPrefix}-number`);
+  if (!codeEl || !numEl) return '';
+  return numEl.value ? `${codeEl.value} ${numEl.value}`.trim() : '';
+}
+
+/* ============================================================================
+   CHANGE PASSWORD MODAL (opened from the user dropdown on every page)
+   ============================================================================ */
+function openChangePasswordModal(){
+  openModal('Change Password', [
+    { key: 'currentPassword', label: 'Current Password', type: 'password' },
+    { key: 'newPassword', label: 'New Password', type: 'password' },
+    { key: 'confirmPassword', label: 'Confirm New Password', type: 'password' },
+  ], {}, async (values, close) => {
+    if (!values.currentPassword || !values.newPassword) { toast('Please fill in all fields.', 'error'); return; }
+    if (values.newPassword !== values.confirmPassword) { toast('New password and confirm password do not match.', 'error'); return; }
+    try {
+      await Api.put('/auth/me', { currentPassword: values.currentPassword, newPassword: values.newPassword });
+      toast('Password changed successfully.', 'success');
+      close();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+}
+
+/* ============================================================================
    APP SHELL (sidebar + topbar), injected into every protected page
    ============================================================================ */
+const SETTINGS_SUBMENU = [
+  { key: 'currencies', label: 'Currencies' },
+  { key: 'project-categories', label: 'Project Categories' },
+  { key: 'locations', label: 'Locations' },
+  { key: 'project-types', label: 'Project Types' },
+  { key: 'billing-basis', label: 'Billing Basis' },
+  { key: 'billing-frequencies', label: 'Billing Frequencies' },
+  { key: 'departments', label: 'Departments' },
+  { key: 'designations', label: 'Designations' },
+  { key: 'migration', label: 'Migration' },
+];
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', icon: 'home', href: 'home.html' },
   { key: 'time-entry', label: 'Time Entry', icon: 'clock', href: 'time-entry.html' },
   { key: 'projects', label: 'Projects', icon: 'briefcase', href: 'projects.html' },
   { key: 'employees', label: 'Employees', icon: 'users', href: 'employees.html' },
   { key: 'reports', label: 'Reports', icon: 'bar', href: 'reports.html' },
-  { key: 'settings', label: 'Settings', icon: 'settings', href: 'settings.html', adminOnly: true },
+  { key: 'settings', label: 'Settings', icon: 'settings', href: 'settings.html', adminOnly: true, submenu: SETTINGS_SUBMENU },
 ];
 
 async function initShell(activePage){
@@ -182,6 +249,7 @@ async function initShell(activePage){
           ${I('chevDown')}
           <div class="dropdown-panel hidden" id="dd-user">
             <a href="profile.html">${I('user')} Profile</a>
+            <a id="change-pw-link">${I('lock')} Change Password</a>
             <a id="logout-link">${I('logout')} Logout</a>
           </div>
         </div>
@@ -196,13 +264,24 @@ async function initShell(activePage){
 
   const navHtml = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin).map(item => {
     const isActive = activePage === item.key;
-    return `<a class="nav-item ${isActive ? 'active' : ''}" href="${item.href}">${I(item.icon)}<span>${item.label}</span></a>`;
+    let html = `<a class="nav-item ${isActive ? 'active' : ''}" href="${item.href}">${I(item.icon)}<span>${item.label}</span></a>`;
+    if (item.submenu && isActive) {
+      const activeTab = new URLSearchParams(location.search).get('tab') || item.submenu[0].key;
+      html += `<div class="nav-sub open">` + item.submenu.map((s) =>
+        `<a class="nav-sub-item ${activeTab === s.key ? 'active' : ''}" href="${item.href}?tab=${s.key}">${s.label}</a>`
+      ).join('') + `</div>`;
+    }
+    return html;
   }).join('');
   document.getElementById('sidebar-nav').innerHTML = navHtml;
 
   document.getElementById('u-name').textContent = user?.name || '';
   document.getElementById('u-id').textContent = user?.employeeCode || '';
   document.getElementById('logout-link').onclick = logout;
+  document.getElementById('change-pw-link').onclick = () => {
+    document.getElementById('dd-user').classList.add('hidden');
+    openChangePasswordModal();
+  };
 
   document.getElementById('bell-wrap').addEventListener('click', (e) => {
     e.stopPropagation();

@@ -129,8 +129,10 @@ CREATE TABLE IF NOT EXISTS employees (
   payroll_type VARCHAR(30),
   location VARCHAR(100),
   gross_salary NUMERIC(12,2) DEFAULT 0,
+  salary_currency VARCHAR(10) DEFAULT 'INR',
   status VARCHAR(20) DEFAULT 'Active',
   access_type VARCHAR(20) DEFAULT 'User',
+  reporting_manager_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -145,6 +147,7 @@ CREATE TABLE IF NOT EXISTS projects (
   project_type VARCHAR(50),
   billing_frequency VARCHAR(50),
   sow_available BOOLEAN DEFAULT FALSE,
+  billable BOOLEAN DEFAULT TRUE,
   project_manager VARCHAR(150),
   billing_basis VARCHAR(50),
   hours_capping NUMERIC(8,2) DEFAULT 0,
@@ -191,3 +194,13 @@ CREATE INDEX IF NOT EXISTS idx_time_entries_employee ON time_entries(employee_id
 CREATE INDEX IF NOT EXISTS idx_time_entries_project ON time_entries(project_id);
 CREATE INDEX IF NOT EXISTS idx_time_entries_date ON time_entries(work_date);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+
+-- ============================================================
+-- Safe additive migrations for existing deployments (columns added
+-- after initial release). ALTER ... ADD COLUMN IF NOT EXISTS is a
+-- no-op if the column is already there, so this is safe to run on
+-- every boot alongside the CREATE TABLE statements above.
+-- ============================================================
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS reporting_manager_id INTEGER REFERENCES employees(id) ON DELETE SET NULL;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS salary_currency VARCHAR(10) DEFAULT 'INR';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS billable BOOLEAN DEFAULT TRUE;

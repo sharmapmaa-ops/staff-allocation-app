@@ -70,15 +70,10 @@
   }
   function pill(s){ return `<span class="pill ${s === 'Active' ? 'active' : 'inactive'}">${s}</span>`; }
 
-  let activeTab = TABS[0].key;
-
-  function renderTabs(){
-    document.getElementById('settings-pilltabs').innerHTML = TABS.map(t => `<button class="pill-tab ${activeTab === t.key ? 'active' : ''}" data-tab="${t.key}">${I(t.icon)} ${t.label}</button>`).join('');
-    document.querySelectorAll('.pill-tab').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderPanel(); }));
-  }
+  let activeTab = new URLSearchParams(location.search).get('tab') || TABS[0].key;
+  if (!TABS.find(t => t.key === activeTab)) activeTab = TABS[0].key;
 
   async function renderPanel(){
-    renderTabs();
     const panel = document.getElementById('settings-panel');
     if (activeTab === 'migration') { renderMigrationPanel(); return; }
 

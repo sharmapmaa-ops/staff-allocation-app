@@ -4,10 +4,12 @@
   setPageTitle('Home', `Welcome back, ${shell.user.name}!`);
 
   let employees = [];
+  let scopeLabel = 'All';
   try {
-    const res = await Api.get('/employees?perPage=200');
+    const res = await Api.get('/dashboard/employee-options');
     employees = res.data;
-  } catch (err) { /* dropdown will just show "All" */ }
+    scopeLabel = res.scopeLabel;
+  } catch (err) { /* dropdown will just show the "all" option */ }
 
   const monthSelect = document.getElementById('home-month-select');
   const now = new Date();
@@ -19,9 +21,8 @@
   monthSelect.innerHTML = months.map(m => `<option value="${m.value}">${m.label}</option>`).join('');
 
   const empSelect = document.getElementById('home-emp-select');
-  empSelect.innerHTML = `<option value="all">All</option>` + employees.map(e => `<option value="${e.id}">${e.full_name} (${e.employee_code})</option>`).join('');
-  if (!shell.isAdmin && shell.user.employeeId) empSelect.value = String(shell.user.employeeId);
-
+  empSelect.innerHTML = `<option value="all">${scopeLabel === 'My Team' ? 'My Team (All)' : 'All'}</option>` +
+    employees.map(e => `<option value="${e.id}">${e.full_name} (${e.employee_code})</option>`).join('');
   empSelect.addEventListener('change', renderDashboard);
   monthSelect.addEventListener('change', renderDashboard);
 

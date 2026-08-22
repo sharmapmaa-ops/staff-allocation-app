@@ -11,6 +11,17 @@
   document.getElementById('eye-btn2').innerHTML = I('eye');
   document.getElementById('back-ic').innerHTML = I('arrowLeft');
 
+  document.getElementById('ws-name').addEventListener('input', debounce(async (e) => {
+    const name = e.target.value.trim();
+    const note = document.getElementById('ws-name-note');
+    if (!name) { note.className = 'field-note'; note.innerHTML = ''; return; }
+    try {
+      const res = await Api.get('/auth/check-workspace-name?name=' + encodeURIComponent(name));
+      if (res.available) { note.className = 'field-note ok'; note.innerHTML = I('check') + ' Available'; }
+      else { note.className = 'field-note err'; note.innerHTML = I('x') + ' Already Taken'; }
+    } catch (err) { note.className = 'field-note'; note.innerHTML = ''; }
+  }, 400));
+
   document.getElementById('eye-btn1').addEventListener('click', () => togglePw('ws-password', document.getElementById('eye-btn1')));
   document.getElementById('eye-btn2').addEventListener('click', () => togglePw('ws-password2', document.getElementById('eye-btn2')));
 

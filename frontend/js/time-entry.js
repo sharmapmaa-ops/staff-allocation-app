@@ -31,7 +31,12 @@
     for (let i = 0; i < 7; i++) { const d = new Date(monday); d.setDate(monday.getDate() + i); days.push(d); }
     return days;
   }
-  function isoDate(d){ return d.toISOString().slice(0, 10); }
+  function isoDate(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
   function dayLabel(d){ return d.toLocaleDateString('en-US', { weekday: 'short' }) + '\n' + d.getDate() + ' ' + d.toLocaleDateString('en-US', { month: 'short' }); }
 
   async function loadWeek(){
@@ -63,14 +68,14 @@
       <th style="width:36px;"><input type="checkbox" id="te-check-all"></th>
       <th>Project <span style="color:#dc2626;">*</span></th>
       <th>Comments</th>
-      ${days.map(d => { const [dn, dd] = dayLabel(d).split('\n'); return `<th>${dn}<br><span style="font-weight:400;color:#6b7280;">${dd}</span></th>`; }).join('')}
+      ${days.map(d => { const [dn, dd] = dayLabel(d).split('\n'); const wknd = (d.getDay() === 0 || d.getDay() === 6) ? 'weekend' : ''; return `<th class="${wknd}">${dn}<br><span style="font-weight:400;color:inherit;opacity:.75;">${dd}</span></th>`; }).join('')}
       <th>Total Hours</th>`;
 
     document.getElementById('te-tbody').innerHTML = rows.map((row, ri) => `
       <tr data-row="${ri}">
         <td><input type="checkbox" class="te-row-check" data-row="${ri}"></td>
         <td><select class="proj-select" data-row="${ri}">
-          ${projects.map(p => `<option value="${p.id}" ${p.id === row.projectId ? 'selected' : ''}>${p.project_name}</option>`).join('')}
+          ${projects.map(p => `<option value="${p.id}" ${p.id === row.projectId ? 'selected' : ''}>${p.project_code} - ${p.project_name} - ${p.client_name || '—'} - ${p.category || '—'}</option>`).join('')}
         </select></td>
         <td><input class="comment-input" data-row="${ri}" value="${row.comments || ''}"></td>
         ${days.map(d => {

@@ -21,4 +21,21 @@ function nextCode(prefix, lastCode, width) {
   return prefix + String(num).padStart(width, '0');
 }
 
-module.exports = { signSessionToken, signTempToken, verifyToken, nextCode };
+/**
+ * Returns the set of employee IDs a given logged-in user is allowed to see
+ * data for: Admins get `null` (meaning "no restriction, see everyone").
+ * Non-admins get an array containing themself plus anyone whose
+ * reporting_manager_id points at their own employee record ("my team").
+ * Requires a `query` function (from config/db) to avoid a circular import.
+ */
+async function getTeamScope(query, user) {
+  if (user.role === 'Admin') return null;
+  if (!user.employeeId) return [];
+  const res = await query(
+    'SELECT id FROM employees WHERE id = $1 OR reporting_manager_id = $1',
+    [user.employeeId]
+  );
+  return res.rows.map((r) => r.id);
+}
+
+module.exports = { signSessionToken, signTempToken, verifyToken, nextCode, getTeamScope };

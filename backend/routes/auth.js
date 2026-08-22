@@ -19,6 +19,21 @@ async function issueCode(userId, purpose) {
 }
 
 // ---------------------------------------------------------------
+// GET /api/auth/check-workspace-name?name=... (public, used live while typing)
+// ---------------------------------------------------------------
+router.get('/check-workspace-name', async (req, res) => {
+  const name = (req.query.name || '').trim();
+  if (!name) return res.json({ available: null });
+  try {
+    const existing = await query('SELECT 1 FROM workspaces WHERE lower(name) = lower($1)', [name]);
+    res.json({ available: existing.rows.length === 0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not check workspace name.' });
+  }
+});
+
+// ---------------------------------------------------------------
 // POST /api/auth/register  (Create Workspace)
 // ---------------------------------------------------------------
 router.post('/register', async (req, res) => {
@@ -30,6 +45,10 @@ router.post('/register', async (req, res) => {
     const existing = await query('SELECT id FROM users WHERE email=$1', [email]);
     if (existing.rows.length) {
       return res.status(409).json({ error: 'An account with this email already exists. Please sign in instead.' });
+    }
+    const existingWs = await query('SELECT id FROM workspaces WHERE lower(name) = lower($1)', [workspaceName]);
+    if (existingWs.rows.length) {
+      return res.status(409).json({ error: 'A workspace with this name already exists. Please choose a different name.' });
     }
     const wsRes = await query('INSERT INTO workspaces (name) VALUES ($1) RETURNING id', [workspaceName]);
     const workspaceId = wsRes.rows[0].id;
@@ -202,8 +221,11 @@ router.get('/me', requireAuth, async (req, res) => {
     const userRes = await query(
       `SELECT u.id, u.full_name, u.email, u.role, u.employee_code, e.id AS employee_row_id,
        e.contact_number, e.designation, e.department, e.dob, e.gender, e.joining_date, e.exit_date,
-       e.payroll_type, e.location, e.gross_salary, e.status
-       FROM users u LEFT JOIN employees e ON e.user_id = u.id WHERE u.id=$1`,
+       e.payroll_type, e.location, e.gross_salary, e.salary_currency, e.status, e.reporting_manager_id,
+       m.full_name AS reporting_manager_name
+       FROM users u LEFT JOIN employees e ON e.user_id = u.id
+       LEFT JOIN employees m ON m.id = e.reporting_manager_id
+       WHERE u.id=$1`,
       [req.user.userId]
     );
     if (!userRes.rows.length) return res.status(404).json({ error: 'User not found.' });
@@ -225,7 +247,10 @@ router.get('/me', requireAuth, async (req, res) => {
       payroll: u.payroll_type,
       location: u.location,
       salary: u.gross_salary,
+      salaryCurrency: u.salary_currency,
       status: u.status,
+      reportingManagerId: u.reporting_manager_id,
+      reportingManagerName: u.reporting_manager_name,
     });
   } catch (err) {
     res.status(500).json({ error: 'Could not load your profile.' });
@@ -251,10 +276,12 @@ router.put('/me', requireAuth, async (req, res) => {
     if (req.user.employeeId) {
       await query(
         `UPDATE employees SET contact_number=$1, designation=$2, department=$3, dob=$4, gender=$5,
-         joining_date=$6, exit_date=$7, payroll_type=$8, location=$9, gross_salary=$10, status=$11
-         WHERE id=$12`,
+         joining_date=$6, exit_date=$7, payroll_type=$8, location=$9, gross_salary=$10, salary_currency=$11,
+         status=$12, reporting_manager_id=$13
+         WHERE id=$14`,
         [b.contact, b.designation, b.department, b.dob || null, b.gender, b.joining || null, b.exit || null,
-         b.payroll, b.location, Number(b.salary) || 0, b.status, req.user.employeeId]
+         b.payroll, b.location, Number(b.salary) || 0, b.salaryCurrency || 'INR', b.status, b.reportingManagerId || null,
+         req.user.employeeId]
       );
     }
     res.json({ message: 'Profile updated successfully.' });

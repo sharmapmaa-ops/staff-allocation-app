@@ -97,8 +97,23 @@ svg.icon-sm{width:15px; height:15px;}
 .input-wrap svg.icon{position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-light-gray);}
 .input-wrap input, .input-wrap textarea{width:100%; padding:11px 14px 11px 40px; border:1px solid var(--border); border-radius:8px; outline:none; transition:border-color .15s, box-shadow .15s;}
 .input-wrap input:focus, .input-wrap textarea:focus, .field select:focus{border-color:var(--blue); box-shadow:0 0 0 3px #dbe6ff;}
-.input-wrap.eye input{padding-right:40px;}
+/* Password fields with an eye-toggle use a flex layout (icon, input, button
+   all in a single bordered row) instead of absolute positioning, so the
+   toggle button can never visually escape the field's box regardless of
+   width/padding changes elsewhere. */
+.input-wrap.eye{
+  display:flex; align-items:center; gap:8px;
+  border:1px solid var(--border); border-radius:8px; padding:0 12px;
+  background:#fff; transition:border-color .15s, box-shadow .15s;
+}
+.input-wrap.eye:focus-within{border-color:var(--blue); box-shadow:0 0 0 3px #dbe6ff;}
+.input-wrap.eye svg.icon{position:static; flex-shrink:0; transform:none;}
+.input-wrap.eye input{
+  flex:1; min-width:0; width:auto; border:none; padding:11px 0; box-shadow:none !important;
+}
+.input-wrap.eye input:focus{box-shadow:none;}
 .input-wrap .eye-btn{position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-light-gray); padding:0; display:flex;}
+.input-wrap.eye .eye-btn{position:static; flex-shrink:0; transform:none;}
 .field-note{font-size:12.5px; margin-top:6px; color:var(--text-gray);}
 .field-note.ok{color:#16a34a; display:flex; align-items:center; gap:5px;}
 .field-note.err{color:#dc2626; display:flex; align-items:center; gap:5px;}
@@ -142,6 +157,11 @@ svg.icon-sm{width:15px; height:15px;}
 .nav-item{display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:8px; color:#c9d3e6; font-size:14.5px; font-weight:500; margin-bottom:2px; position:relative; transition:background .12s;}
 .nav-item:hover{background:#132345; color:#fff;}
 .nav-item.active{background:var(--navy-active); color:#fff;}
+.nav-sub{padding-left:14px; max-height:0; overflow:hidden; transition:max-height .2s ease;}
+.nav-sub.open{max-height:420px;}
+.nav-sub-item{display:block; padding:8px 12px 8px 30px; color:#a9b6d1; font-size:13.5px; border-radius:7px; margin-bottom:2px;}
+.nav-sub-item:hover{background:#132345; color:#fff;}
+.nav-sub-item.active{color:#fff; font-weight:600; background:#132345;}
 .sidebar-footer{padding:16px 20px 20px; color:#7c88a3; font-size:12px; border-top:1px solid #16233f;}
 .sidebar-footer .ver{margin-top:4px;}
 
@@ -198,6 +218,11 @@ h3.section-title{color:var(--blue); font-size:15.5px; margin:0 0 14px;}
 .amount-wrap{position:relative;}
 .amount-wrap .suffix{position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-gray); font-size:13px;}
 .form-actions{display:flex; justify-content:flex-end; gap:12px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border);}
+
+/* Country-code + phone number group (Employees, Profile forms) */
+.phone-group{display:flex; gap:0;}
+.phone-group select{width:100px; border-radius:8px 0 0 8px; border-right:none; flex-shrink:0;}
+.phone-group input{border-radius:0 8px 8px 0 !important;}
 
 .toolbar{display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
 .search-box{flex:1; min-width:220px; position:relative;}
@@ -284,7 +309,8 @@ table.data-table tbody tr:hover{background:#fafbfd;}
 table.te-table{border-collapse:collapse; width:100%; min-width:1000px;}
 table.te-table th{background:#fff; border-bottom:2px solid var(--border); padding:14px 16px; text-align:left; font-size:13.5px; font-weight:700;}
 table.te-table td{padding:10px 14px; border-bottom:1px solid #f1f2f4; vertical-align:middle;}
-table.te-table td.weekend{background:#fafbff;}
+table.te-table td.weekend{background:#fff3e0;}
+table.te-table th.weekend{background:#ffe4c4; color:#9a5b00;}
 table.te-table select.proj-select{width:170px; padding:8px 10px; border:1px solid var(--border); border-radius:7px;}
 table.te-table input.comment-input{width:170px; padding:8px 10px; border:1px solid var(--border); border-radius:7px;}
 table.te-table input.time-input{width:70px; padding:8px 8px; border:1px solid var(--border); border-radius:7px; text-align:center;}

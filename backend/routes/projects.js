@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   const b = req.body;
   try {
     const lastRes = await query('SELECT project_code FROM projects ORDER BY id DESC LIMIT 1');

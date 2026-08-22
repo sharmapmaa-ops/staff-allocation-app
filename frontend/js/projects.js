@@ -29,7 +29,6 @@
       <button class="${tab === 'add' ? 'active' : ''}" id="tab-add">${I('plus')} Add Project</button>`;
     document.getElementById('tab-list').addEventListener('click', () => { tab = 'list'; editingId = null; renderAll(); });
     document.getElementById('tab-add').addEventListener('click', () => {
-      if (!shell.isAdmin) { toast('Only Administrators can add projects.', 'error'); return; }
       tab = 'add'; editingId = null; renderAll();
     });
   }
